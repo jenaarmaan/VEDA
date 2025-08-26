@@ -1,0 +1,68 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Get user role from the 'users' collection document
+    function getUserRole(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+    }
+
+    // Get user department/agency from the 'users' collection document
+    function getUserDepartment(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.department;
+    }
+    
+    // Users collection
+    // Allow users to read their own profile, but not write to it after creation.
+    // Admins can manage user profiles.
+    match /users/{userId} {
+      allow read: if request.auth.uid == userId || getUserRole(request.auth.uid) == 'govt_admin';
+      allow create; // Allow user creation during signup
+      allow update, delete: if getUserRole(request.auth.uid) == 'govt_admin';
+    }
+
+    // Reports collection
+    // General users can create reports and read their own.
+    // Admins and agency personnel can read all reports.
+    match /reports/{reportId} {
+      allow read: if request.auth.uid == resource.data.submittedBy
+                   || getUserRole(request.auth.uid) in ['govt_admin', 'agency_head', 'agency_employee'];
+      allow create: if request.auth.uid != null && getUserRole(request.auth.uid) == 'general_user';
+      allow update, delete: if getUserRole(request.auth.uid) == 'govt_admin'; // Only admins can modify/delete
+    }
+
+    // Tasks collection
+    // Agency heads can create/assign tasks and update any task in their agency.
+    // Agency employees can only update tasks assigned to them.
+    // Admins have read-only access.
+    match /tasks/{taskId} {
+      allow read: if getUserRole(request.auth.uid) in ['govt_admin', 'agency_head', 'agency_employee'];
+      allow create: if getUserRole(request.auth.uid) == 'agency_head';
+      allow update: if 
+        // Agency employee can update their own task
+        (getUserRole(request.auth.uid) == 'agency_employee' && request.auth.uid == resource.data.assignedTo) ||
+        // Agency head can update any task in their department
+        (getUserRole(request.auth.uid) == 'agency_head' && getUserDepartment(request.auth.uid) == resource.data.department);
+      allow delete: if getUserRole(request.auth.uid) == 'govt_admin';
+    }
+
+    // Notifications collection
+    // Users can only read and manage their own notifications.
+    match /notifications/{userId} {
+      allow read, write, delete: if request.auth.uid == userId;
+    }
+    
+    match /notifications/{userId}/user_notifications/{notificationId} {
+       allow read, write, delete: if request.auth.uid == userId;
+    }
+
+    // Audit Logs collection
+    // Only admins can read audit logs. No one should be able to write directly.
+    // Writes to this collection should be handled by secure backend functions.
+    match /audit_logs/{logId} {
+      allow read: if getUserRole(request.auth.uid) == 'govt_admin';
+      allow write: if false; // Should be written from a trusted server environment
+    }
+  }
+}
