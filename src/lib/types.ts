@@ -18,13 +18,14 @@ export interface Report {
     submittedBy: string;
     contentType: 'text' | 'link' | 'image' | 'video' | 'document';
     contentData: string;
+    location: string; // The location/agency of the user who submitted the report
     notes?: string;
     aiVerdict: 'Fake' | 'True' | 'Unverifiable';
     aiConfidenceScore: number;
     sources: string[];
     justification: string;
     status: 'Submitted' | 'Under Investigation' | 'Resolved';
-    createdAt: number; // Firestore Timestamp
+    createdAt: number; // Storing as a timestamp (Date.now())
 }
 
 export interface Task {

@@ -62,6 +62,14 @@ export async function assignTask(taskData: { reportId: string, assignedBy: strin
   return taskId;
 }
 
+export async function getAllTasks(): Promise<Task[]> {
+    const tasksRef = collection(db, 'tasks');
+    const q = query(tasksRef, orderBy('updatedAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+}
+
+
 export async function getTasksForUser(userId: string): Promise<Task[]> {
   const tasksRef = collection(db, 'tasks');
   const q = query(tasksRef, where('assignedTo', '==', userId), orderBy('updatedAt', 'desc'));
