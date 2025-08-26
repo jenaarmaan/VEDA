@@ -5,8 +5,8 @@ import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/shared/Header';
 
 export const metadata: Metadata = {
-  title: 'RoleRoute',
-  description: 'Role-based authentication and routing application.',
+  title: 'VEDHA',
+  description: 'A platform for truth and clarity.',
 };
 
 export default function RootLayout({
