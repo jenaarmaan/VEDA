@@ -40,14 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  if (loading) {
-    return (
-       <div className="flex h-screen items-center justify-center">
-        <Spinner />
-      </div>
-    )
-  }
-
   return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
 }
 
