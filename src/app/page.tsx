@@ -1,46 +1,59 @@
 'use client';
 
-import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import Spinner from '@/components/shared/Spinner';
-import type { UserProfile } from '@/lib/types';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 
-const getDashboardPath = (role: UserProfile['role']) => {
-  switch (role) {
-    case 'general_user':
-      return '/dashboard/user';
-    case 'govt_admin':
-      return '/dashboard/admin';
-    case 'agency_head':
-      return '/dashboard/agency-head';
-    case 'department_head':
-      return '/dashboard/department-head';
-    case 'agency_employee':
-      return '/dashboard/agency-employee';
-    default:
-      return '/login';
-  }
-};
-
-export default function HomePage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading) {
-      if (user && user.role) {
-        const path = getDashboardPath(user.role);
-        router.replace(path);
-      } else {
-        router.replace('/login');
-      }
-    }
-  }, [user, loading, router]);
-
+export default function LandingPage() {
   return (
-    <div className="flex h-[calc(100vh-56px)] items-center justify-center">
-      <Spinner />
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-56px)] bg-gray-50">
+      <div className="text-center mb-12">
+        <h1 className="text-5xl font-extrabold tracking-tight text-gray-900 sm:text-6xl">
+          Welcome to VEDHA
+        </h1>
+        <p className="mt-4 max-w-2xl mx-auto text-xl text-gray-500">
+          Your partner in combating misinformation.
+        </p>
+      </div>
+
+      <div className="w-full max-w-md space-y-4">
+        <Link href="/signup" passHref>
+          <Card className="hover:shadow-lg hover:border-primary transition-all duration-200 cursor-pointer">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Sign Up</CardTitle>
+                <CardDescription>Create a new account to get started.</CardDescription>
+              </div>
+              <ArrowRight className="text-gray-400" />
+            </CardHeader>
+          </Card>
+        </Link>
+        
+        <Link href="/login" passHref>
+          <Card className="hover:shadow-lg hover:border-primary transition-all duration-200 cursor-pointer">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Sign In</CardTitle>
+                <CardDescription>Access your existing account dashboard.</CardDescription>
+              </div>
+              <ArrowRight className="text-gray-400" />
+            </CardHeader>
+          </Card>
+        </Link>
+        
+        <Link href="/documentation" passHref>
+          <Card className="hover:shadow-lg hover:border-primary transition-all duration-200 cursor-pointer">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Documentation</CardTitle>
+                <CardDescription>Learn more about VEDHA's features.</CardDescription>
+              </div>
+              <ArrowRight className="text-gray-400" />
+            </CardHeader>
+          </Card>
+        </Link>
+      </div>
     </div>
   );
 }
