@@ -34,7 +34,7 @@ export interface Task {
     reportId: string;
     assignedBy: string;
     assignedTo: string;
-agencys: string;
+    agency: string;
     department: string;
     status: 'Pending' | 'In Progress' | 'Resolved';
     notes?: string;
