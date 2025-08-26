@@ -14,6 +14,8 @@ const getDashboardPath = (role: UserProfile['role']) => {
       return '/dashboard/admin';
     case 'agency_head':
       return '/dashboard/agency-head';
+    case 'department_head':
+      return '/dashboard/department-head';
     case 'agency_employee':
       return '/dashboard/agency-employee';
     default:

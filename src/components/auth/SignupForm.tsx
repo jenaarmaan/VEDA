@@ -42,7 +42,8 @@ const formSchema = z.object({
   contact: z.string().min(10, { message: 'Contact number must be at least 10 digits.' }),
   address: z.string().min(5, { message: 'Address is too short.' }),
   location: z.string().min(2, { message: 'Location is too short.' }),
-  role: z.enum(['general_user', 'govt_admin', 'agency_head', 'agency_employee']),
+  department: z.string().optional(),
+  role: z.enum(['general_user', 'govt_admin', 'agency_head', 'department_head', 'agency_employee']),
 });
 
 export default function SignupForm() {
@@ -75,6 +76,7 @@ export default function SignupForm() {
         contact: values.contact,
         address: values.address,
         location: values.location,
+        department: values.department || '',
         role: values.role,
       });
 
@@ -93,6 +95,8 @@ export default function SignupForm() {
       setIsLoading(false);
     }
   }
+
+  const selectedRole = form.watch('role');
 
   return (
     <Card className="w-full max-w-lg">
@@ -187,9 +191,9 @@ export default function SignupForm() {
                 name="location"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Location</FormLabel>
+                    <FormLabel>Location / Agency</FormLabel>
                     <FormControl>
-                      <Input placeholder="City, Country" {...field} />
+                      <Input placeholder="e.g. Mumbai Police" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -211,6 +215,7 @@ export default function SignupForm() {
                         <SelectItem value="general_user">General User</SelectItem>
                         <SelectItem value="govt_admin">Government Admin</SelectItem>
                         <SelectItem value="agency_head">Agency Head</SelectItem>
+                        <SelectItem value="department_head">Department Head</SelectItem>
                         <SelectItem value="agency_employee">Agency Employee</SelectItem>
                       </SelectContent>
                     </Select>
@@ -218,6 +223,21 @@ export default function SignupForm() {
                   </FormItem>
                 )}
               />
+              {(selectedRole === 'department_head' || selectedRole === 'agency_employee') && (
+                 <FormField
+                    control={form.control}
+                    name="department"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Department</FormLabel>
+                        <FormControl>
+                        <Input placeholder="e.g. Cyber Crime" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+              )}
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
