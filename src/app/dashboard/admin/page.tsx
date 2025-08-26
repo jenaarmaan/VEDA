@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell } from 'recharts';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, SlidersHorizontal } from 'lucide-react';
+import Link from 'next/link';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -97,9 +98,17 @@ export default function GovtAdminDashboard() {
   return (
     <div className="container py-12">
         <Card>
-            <CardHeader>
-                <CardTitle>Government Admin Dashboard</CardTitle>
-                <CardDescription>System-wide monitoring and analytics portal.</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>Government Admin Dashboard</CardTitle>
+                    <CardDescription>System-wide monitoring and analytics portal.</CardDescription>
+                </div>
+                 <Button asChild variant="outline">
+                    <Link href="/dashboard/admin/audit-log">
+                        <SlidersHorizontal className="mr-2" />
+                        Audit Log
+                    </Link>
+                </Button>
             </CardHeader>
             <CardContent>
                 {loading ? <div className="flex justify-center items-center h-64"><Spinner /></div> :

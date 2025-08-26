@@ -1,6 +1,6 @@
-import { collection, query, where, getDocs, orderBy, doc, getDoc, setDoc, serverTimestamp, updateDoc, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, doc, getDoc, setDoc, serverTimestamp, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Report, Task, UserProfile } from './types';
+import type { Report, Task, UserProfile, AuditLog, Notification } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 // Reports
@@ -56,8 +56,7 @@ export async function assignTask(taskData: { reportId: string, assignedBy: strin
   await setDoc(taskRef, newTask);
   await createAuditLog(taskData.assignedBy, 'assign_task', { taskId, reportId: taskData.reportId, assignedTo: taskData.assignedTo });
   
-  // TODO: Send notification
-  console.log(`Notification: Task ${taskId} assigned to ${taskData.assignedTo}`);
+  await createNotification(taskData.assignedTo, `You have been assigned a new task for report ${taskData.reportId.substring(0,8)}.`);
 
   return taskId;
 }
@@ -97,16 +96,20 @@ export async function getTasksForDepartment(agency: string, department: string):
 
 export async function updateTaskStatus(taskId: string, status: Task['status'], actorId: string): Promise<void> {
     const taskRef = doc(db, 'tasks', taskId);
+    const taskDoc = await getDoc(taskRef);
+    if (!taskDoc.exists()) throw new Error("Task not found");
+    const taskData = taskDoc.data() as Task;
+    
     await updateDoc(taskRef, { status, updatedAt: Date.now() });
     await createAuditLog(actorId, 'update_task_status', { taskId, newStatus: status });
-    // TODO: Send notification
+    await createNotification(taskData.assignedBy, `Task ${taskId.substring(0,8)} status has been updated to ${status}.`);
 }
 
 export async function reassignTask(taskId: string, newAssignedTo: string, actorId: string): Promise<void> {
     const taskRef = doc(db, 'tasks', taskId);
     await updateDoc(taskRef, { assignedTo: newAssignedTo, updatedAt: Date.now() });
     await createAuditLog(actorId, 'reassign_task', { taskId, newAssignedTo });
-    // TODO: Send notification
+    await createNotification(newAssignedTo, `A task has been reassigned to you.`);
 }
 
 
@@ -119,4 +122,44 @@ export async function createAuditLog(actorId: string, actionType: string, detail
     details,
     timestamp: serverTimestamp(),
   });
+}
+
+export async function getAuditLogs(filters: { userId?: string, reportId?: string, startDate?: Date, endDate?: Date }): Promise<AuditLog[]> {
+    const auditLogsRef = collection(db, 'audit_logs');
+    let q = query(auditLogsRef, orderBy('timestamp', 'desc'));
+
+    if (filters.userId) {
+        q = query(q, where('actorId', '==', filters.userId));
+    }
+    if (filters.reportId) {
+        q = query(q, where('details.reportId', '==', filters.reportId));
+    }
+     if (filters.startDate) {
+        q = query(q, where('timestamp', '>=', Timestamp.fromDate(filters.startDate)));
+    }
+    if (filters.endDate) {
+        q = query(q, where('timestamp', '<=', Timestamp.fromDate(filters.endDate)));
+    }
+    
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AuditLog));
+}
+
+
+// Notifications
+export async function createNotification(userId: string, message: string): Promise<void> {
+    const notificationId = uuidv4();
+    const notificationRef = doc(db, 'notifications', notificationId);
+    const newNotification: Omit<Notification, 'id'> = {
+        userId,
+        message,
+        isRead: false,
+        createdAt: Date.now(),
+    };
+    await setDoc(notificationRef, newNotification);
+
+    // Placeholder for real-time/push/email notification
+    console.log(`--- NOTIFICATION CREATED for ${userId} ---`);
+    console.log(`Message: ${message}`);
+    console.log("-----------------------------------------");
 }

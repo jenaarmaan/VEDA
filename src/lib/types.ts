@@ -34,7 +34,7 @@ export interface Task {
     reportId: string;
     assignedBy: string;
     assignedTo: string;
-    agency: string;
+agencys: string;
     department: string;
     status: 'Pending' | 'In Progress' | 'Resolved';
     notes?: string;
@@ -47,6 +47,15 @@ export interface AuditLog {
     id: string;
     actorId: string;
     actionType: string;
-    timestamp: number;
+    timestamp: { seconds: number, nanoseconds: number };
     details: Record<string, any>;
+}
+
+export interface Notification {
+    id: string;
+    userId: string;
+    message: string;
+    isRead: boolean;
+    createdAt: number;
+    link?: string; // Optional link to the relevant page (e.g., task details)
 }
