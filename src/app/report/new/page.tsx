@@ -109,7 +109,7 @@ export default function NewReportPage() {
       // Placeholder for email notification
       console.log("--- EMAIL NOTIFICATION TO BE SENT ---");
       console.log(`To: agency-head@${user.location}.gov`);
-      console.log(`CC: govt-admin@gov.in, official@vedha.in`);
+      console.log(`CC: govt-admin@gov.in, official@veda.in`);
       console.log(`Subject: New Report Submitted - Case ID: ${reportId}`);
       console.log(`Body: AI Verdict: ${result.verdict}. Case ID: ${reportId}. Original Content: ${values.contentData}`);
       console.log("--------------------------------------");
@@ -142,7 +142,7 @@ export default function NewReportPage() {
 
   return (
     <div className="container py-12">
-      <Card className="max-w-3xl mx-auto">
+      <Card className="max-w-3xl mx-auto bg-card/50">
         <CardHeader>
           <CardTitle>Submit Content for Verification</CardTitle>
           <CardDescription>

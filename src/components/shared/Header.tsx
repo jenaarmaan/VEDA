@@ -22,19 +22,19 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
         <div className="mr-4 flex items-center">
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <span className="font-bold sm:inline-block">
-              VEDHA
+              VEDA
             </span>
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
           <nav className="flex items-center gap-4">
-             <Link href="/documentation" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
-                Documentation
+             <Link href="/about" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                About
             </Link>
             {user ? (
               <Button variant="ghost" size="sm" onClick={handleLogout}>

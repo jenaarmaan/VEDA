@@ -33,7 +33,7 @@ const prompt = ai.definePrompt({
   name: 'analyzeContentPrompt',
   input: { schema: AnalyzeContentInputSchema },
   output: { schema: AnalyzeContentOutputSchema },
-  prompt: `You are a highly advanced AI fact-checking expert for an organization named VEDHA. Your task is to analyze the provided content and determine its authenticity.
+  prompt: `You are a highly advanced AI fact-checking expert for an organization named VEDA. Your task is to analyze the provided content and determine its authenticity.
 
 You must provide a clear verdict, a confidence score, a detailed justification, and a list of credible sources.
 

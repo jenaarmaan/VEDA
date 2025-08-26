@@ -1,20 +1,20 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
-export default function DocumentationPage() {
+export default function AboutPage() {
   return (
     <div className="container py-12">
       <Card>
         <CardHeader>
-          <CardTitle>VEDHA Documentation</CardTitle>
+          <CardTitle>About VEDA</CardTitle>
           <CardDescription>
-            Welcome to the official documentation for the VEDHA application.
+            Welcome to the official documentation for the VEDA application.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <section>
             <h2 className="text-xl font-semibold mb-2">Introduction</h2>
             <p>
-             VEDHA is a robust application designed to manage user authentication and role-based access control for reporting and verifying information. It provides a seamless experience for different user types by redirecting them to their respective dashboards upon login.
+             VEDA is a robust application designed to manage user authentication and role-based access control for reporting and verifying information. It provides a seamless experience for different user types by redirecting them to their respective dashboards upon login.
             </p>
           </section>
           <section>
