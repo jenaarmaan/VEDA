@@ -10,3 +10,18 @@ export interface UserProfile {
   address: string;
   location: string;
 }
+
+export interface Report {
+    id: string;
+    reportId: string;
+    submittedBy: string;
+    contentType: 'text' | 'link' | 'image' | 'video' | 'document';
+    contentData: string;
+    notes?: string;
+    aiVerdict: 'Fake' | 'True' | 'Unverifiable';
+    aiConfidenceScore: number;
+    sources: string[];
+    justification: string;
+    status: 'Submitted' | 'Under Investigation' | 'Resolved';
+    createdAt: number; // Firestore Timestamp
+}
