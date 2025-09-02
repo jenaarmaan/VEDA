@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
@@ -11,6 +12,14 @@ import { signOut } from 'firebase/auth';
 export default function Header() {
   const { user } = useAuth();
   const router = useRouter();
+
+  // If we are on the landing page and not logged in, we don't need a header
+  // as the new landing page has its own navigation.
+  // This is a simple way to conditionally render the header.
+  // A more robust solution might use specific layouts for different routes.
+  if (!user && router.pathname === '/') {
+    return null;
+  }
 
   const handleLogout = async () => {
     try {
@@ -37,10 +46,15 @@ export default function Header() {
                 About
             </Link>
             {user ? (
-              <Button variant="ghost" size="sm" onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </Button>
+              <>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/dashboard/user">Dashboard</Link>
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </Button>
+              </>
             ) : (
                 <>
                     <Button asChild variant="ghost" size="sm">

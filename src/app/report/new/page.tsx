@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,8 +25,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeContent, type AnalyzeContentInput, type AnalyzeContentOutput } from '@/ai/flows/analyzeContentFlow';
 import { doc, setDoc } from 'firebase/firestore';
@@ -44,19 +45,29 @@ const formSchema = z.object({
 export default function NewReportPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalyzeContentOutput | null>(null);
   const [submittedReportId, setSubmittedReportId] = useState<string | null>(null);
 
+  const prefilledContent = searchParams.get('contentData');
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       contentType: 'text',
-      contentData: '',
+      contentData: prefilledContent || '',
       notes: '',
     },
   });
+
+  useEffect(() => {
+    if (prefilledContent) {
+      form.setValue('contentData', prefilledContent);
+    }
+  }, [prefilledContent, form]);
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -65,6 +76,7 @@ export default function NewReportPage() {
         title: 'Authentication Error',
         description: 'You must be logged in to submit a report.',
       });
+      router.push(`/login?redirect=/report/new&contentData=${encodeURIComponent(values.contentData)}`);
       return;
     }
 
