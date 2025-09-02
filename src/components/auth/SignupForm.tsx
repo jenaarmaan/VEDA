@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -43,7 +44,7 @@ const formSchema = z.object({
   address: z.string().min(5, { message: 'Address is too short.' }),
   location: z.string().min(2, { message: 'Location is too short.' }),
   department: z.string().optional(),
-  role: z.enum(['general_user', 'govt_admin', 'agency_head', 'department_head', 'agency_employee']),
+  role: z.enum(['general_user', 'govt_admin', 'agency_head', 'department_head', 'agency_employee', 'state_officer']),
 });
 
 export default function SignupForm() {
@@ -215,6 +216,7 @@ export default function SignupForm() {
                         <SelectItem value="general_user">General User</SelectItem>
                         <SelectItem value="govt_admin">Government Admin</SelectItem>
                         <SelectItem value="agency_head">Agency Head</SelectItem>
+                        <SelectItem value="state_officer">State Officer</SelectItem>
                         <SelectItem value="department_head">Department Head</SelectItem>
                         <SelectItem value="agency_employee">Agency Employee</SelectItem>
                       </SelectContent>

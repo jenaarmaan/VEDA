@@ -1,5 +1,7 @@
-import { collection, query, where, getDocs, orderBy, doc, getDoc, setDoc, serverTimestamp, updateDoc, addDoc, Timestamp } from 'firebase/firestore';
-import { db } from './firebase';
+
+import { collection, query, where, getDocs, orderBy, doc, getDoc, setDoc, serverTimestamp, updateDoc, addDoc, Timestamp, deleteDoc } from 'firebase/firestore';
+import { db, auth } from './firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import type { Report, Task, UserProfile, AuditLog, Notification } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -38,6 +40,33 @@ export async function getUsersInDepartment(agency: string, department: string): 
     return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
 }
 
+export async function addUserToAgency(userData: { name: string, email: string, password: string, position: string, phone: string, agency: string, role: 'agency_employee' }): Promise<UserProfile> {
+    // This function should ideally be an admin-only callable cloud function for security.
+    // For now, we create the user directly from the client, which is not secure for production.
+    const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
+    const user = userCredential.user;
+
+    const newUserProfile: Omit<UserProfile, 'uid'> = {
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        age: 0, // Age can be optional or collected later
+        contact: userData.phone,
+        address: '', // Address can be optional
+        location: userData.agency,
+        department: userData.position,
+    };
+
+    await setDoc(doc(db, 'users', user.uid), newUserProfile);
+    return { uid: user.uid, ...newUserProfile };
+}
+
+export async function removeUserFromAgency(userId: string): Promise<void> {
+    // This is also insecure from the client. Should be a cloud function.
+    // It only deletes the Firestore record, not the Auth user.
+    await deleteDoc(doc(db, 'users', userId));
+}
+
 
 // Tasks
 export async function assignTask(taskData: { reportId: string, assignedBy: string, assignedTo: string, department: string, agency: string }): Promise<string> {
@@ -58,8 +87,24 @@ export async function assignTask(taskData: { reportId: string, assignedBy: strin
   
   await createNotification(taskData.assignedTo, `You have been assigned a new task for report ${taskData.reportId.substring(0,8)}.`);
 
+  // Update report status
+  const reportRef = doc(db, 'reports', taskData.reportId);
+  await updateDoc(reportRef, { status: 'Under Review' });
+
   return taskId;
 }
+
+export async function assignTaskToEmployee(taskData: { reportId: string, assignedBy: string, assignedTo: string, agency: string }): Promise<string> {
+    const userDoc = await getDoc(doc(db, 'users', taskData.assignedTo));
+    if (!userDoc.exists()) throw new Error("User to assign not found");
+    const assigneeData = userDoc.data() as UserProfile;
+
+    return assignTask({
+        ...taskData,
+        department: assigneeData.department || 'General'
+    });
+}
+
 
 export async function getAllTasks(): Promise<Task[]> {
     const tasksRef = collection(db, 'tasks');

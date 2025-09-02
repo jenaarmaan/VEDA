@@ -1,4 +1,5 @@
-export type UserRole = 'general_user' | 'govt_admin' | 'agency_head' | 'department_head' | 'agency_employee';
+
+export type UserRole = 'general_user' | 'govt_admin' | 'agency_head' | 'department_head' | 'agency_employee' | 'state_officer';
 
 export interface UserProfile {
   uid: string;
