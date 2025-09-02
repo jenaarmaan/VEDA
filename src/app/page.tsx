@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { Menu, Plus, Mic, Settings } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { VedhaIcon } from '@/components/icons/VedhaIcon';
 
 export default function LandingPage() {
   const [inputValue, setInputValue] = useState('');
@@ -38,8 +40,9 @@ export default function LandingPage() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="bg-[#1e1f20] text-white border-gray-700 w-[280px] p-0 flex flex-col">
-               <div className="p-4 border-b border-gray-700">
-                 <h2 className="text-xl font-bold text-center">VEDA</h2>
+               <div className="p-4 border-b border-gray-700 flex items-center justify-center gap-2">
+                 <VedhaIcon className="h-6 w-6" />
+                 <h2 className="text-xl font-bold">VEDA</h2>
                </div>
                <div className="flex-grow">
                  {/* Future sidebar links can go here */}
@@ -52,13 +55,14 @@ export default function LandingPage() {
                </div>
             </SheetContent>
           </Sheet>
+          <VedhaIcon className="h-6 w-6" />
           <span className="text-xl font-bold">VEDA</span>
         </div>
         <div className="flex items-center space-x-4">
           <Button variant="link" asChild className="text-gray-300 hover:text-white">
             <Link href="/about">About</Link>
           </Button>
-          <Button variant="ghost" asChild className="bg-blue-600 text-white hover:bg-blue-700 rounded-md">
+          <Button asChild className="bg-blue-600 text-white hover:bg-blue-700 rounded-md">
             <Link href="/login">Login / Signup</Link>
           </Button>
         </div>
