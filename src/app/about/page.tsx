@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowRight, Building, Landmark, User, UserCheck } from "lucide-react";
+import { ArrowRight, Building, Landmark, User, UserCheck, Shield } from "lucide-react";
 import Link from "next/link";
 
 const roleDashboards = [
@@ -12,7 +12,7 @@ const roleDashboards = [
   {
     role: "Government Admin",
     description: "Oversee system-wide analytics and all submitted reports.",
-    href: "/dashboard/admin",
+    href: "/dashboard/govt-admin",
     icon: <Landmark className="h-6 w-6 text-primary" />,
   },
   {
@@ -26,6 +26,12 @@ const roleDashboards = [
     description: "View and update the status of your assigned investigation tasks.",
     href: "/dashboard/agency-employee",
     icon: <UserCheck className="h-6 w-6 text-primary" />,
+  },
+   {
+    role: "State Officer",
+    description: "Manage state-level cases and coordinate with your team.",
+    href: "/dashboard/state-officer",
+    icon: <Shield className="h-6 w-6 text-primary" />,
   },
 ];
 
@@ -68,7 +74,7 @@ export default function AboutPage() {
 
       <section className="mt-12">
         <h2 className="text-2xl font-semibold mb-6 text-center">Development Dashboards</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {roleDashboards.map((item) => (
                 <Link href={item.href} key={item.role} className="group">
                     <Card className="h-full hover:bg-accent/50 transition-colors">
