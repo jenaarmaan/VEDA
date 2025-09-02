@@ -1,4 +1,34 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ArrowRight, Building, Landmark, User, UserCheck } from "lucide-react";
+import Link from "next/link";
+
+const roleDashboards = [
+  {
+    role: "General User",
+    description: "Access the dashboard for submitting and tracking reports.",
+    href: "/dashboard/user",
+    icon: <User className="h-6 w-6 text-primary" />,
+  },
+  {
+    role: "Government Admin",
+    description: "Oversee system-wide analytics and all submitted reports.",
+    href: "/dashboard/admin",
+    icon: <Landmark className="h-6 w-6 text-primary" />,
+  },
+  {
+    role: "Agency Head",
+    description: "Manage incoming reports and assign tasks to your team.",
+    href: "/dashboard/agency-head",
+    icon: <Building className="h-6 w-6 text-primary" />,
+  },
+    {
+    role: "Agency Employee",
+    description: "View and update the status of your assigned investigation tasks.",
+    href: "/dashboard/agency-employee",
+    icon: <UserCheck className="h-6 w-6 text-primary" />,
+  },
+];
+
 
 export default function AboutPage() {
   return (
@@ -35,6 +65,32 @@ export default function AboutPage() {
           </section>
         </CardContent>
       </Card>
+
+      <section className="mt-12">
+        <h2 className="text-2xl font-semibold mb-6 text-center">Development Dashboards</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {roleDashboards.map((item) => (
+                <Link href={item.href} key={item.role} className="group">
+                    <Card className="h-full hover:bg-accent/50 transition-colors">
+                        <CardHeader>
+                           <div className="flex items-center justify-between">
+                             <CardTitle className="text-lg">{item.role}</CardTitle>
+                             {item.icon}
+                           </div>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-muted-foreground">{item.description}</p>
+                            <div className="flex items-center text-sm font-medium text-primary mt-4">
+                                Go to Dashboard
+                                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </Link>
+            ))}
+        </div>
+      </section>
+
     </div>
   );
 }
