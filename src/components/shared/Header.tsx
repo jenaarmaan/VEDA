@@ -5,21 +5,14 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LogOut, Book } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
+import { VedhaIcon } from '../icons/VedhaIcon';
 
 export default function Header() {
   const { user } = useAuth();
   const router = useRouter();
-
-  // If we are on the landing page and not logged in, we don't need a header
-  // as the new landing page has its own navigation.
-  // This is a simple way to conditionally render the header.
-  // A more robust solution might use specific layouts for different routes.
-  if (!user && router.pathname === '/') {
-    return null;
-  }
 
   const handleLogout = async () => {
     try {
@@ -35,6 +28,7 @@ export default function Header() {
       <div className="container flex h-14 items-center">
         <div className="mr-4 flex items-center">
           <Link href="/" className="mr-6 flex items-center space-x-2">
+            <VedhaIcon className="h-6 w-6" />
             <span className="font-bold sm:inline-block">
               VEDA
             </span>
@@ -57,11 +51,8 @@ export default function Header() {
               </>
             ) : (
                 <>
-                    <Button asChild variant="ghost" size="sm">
-                        <Link href="/login">Login</Link>
-                    </Button>
                     <Button asChild size="sm">
-                        <Link href="/signup">Sign Up</Link>
+                        <Link href="/login">Sign In</Link>
                     </Button>
                 </>
             )}

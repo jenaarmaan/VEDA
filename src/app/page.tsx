@@ -3,14 +3,12 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
-import { Menu, Plus, Mic, Settings } from 'lucide-react';
+import { Plus, Mic } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { VedhaIcon } from '@/components/icons/VedhaIcon';
 
 export default function LandingPage() {
   const [inputValue, setInputValue] = useState('');
@@ -29,47 +27,8 @@ export default function LandingPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#131314] text-gray-200 font-sans">
-      {/* Top Navigation Bar */}
-      <header className="flex justify-between items-center p-4">
-        <div className="flex items-center space-x-4">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-gray-400 hover:bg-gray-800 hover:text-white">
-                <Menu className="h-6 w-6" />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="bg-[#1e1f20] text-white border-gray-700 w-[280px] p-0 flex flex-col">
-               <div className="p-4 border-b border-gray-700 flex items-center justify-center gap-2">
-                 <VedhaIcon className="h-6 w-6" />
-                 <h2 className="text-xl font-bold">VEDA</h2>
-               </div>
-               <div className="flex-grow">
-                 {/* Future sidebar links can go here */}
-               </div>
-               <div className="p-4 border-t border-gray-700">
-                  <Button variant="ghost" className="w-full justify-start space-x-2 text-gray-300 hover:bg-gray-700">
-                    <Settings className="h-5 w-5" />
-                    <span>Settings</span>
-                  </Button>
-               </div>
-            </SheetContent>
-          </Sheet>
-          <VedhaIcon className="h-6 w-6" />
-          <span className="text-xl font-bold">VEDA</span>
-        </div>
-        <div className="flex items-center space-x-4">
-          <Button variant="link" asChild className="text-gray-300 hover:text-white">
-            <Link href="/about">About</Link>
-          </Button>
-          <Button asChild className="bg-blue-600 text-white hover:bg-blue-700 rounded-md">
-            <Link href="/login">Login / Signup</Link>
-          </Button>
-        </div>
-      </header>
-
       {/* Main Center Section */}
-      <main className="flex-grow flex flex-col items-center justify-center text-center px-4 -mt-14">
+      <main className="flex-grow flex flex-col items-center justify-center text-center px-4">
         <h1 className="text-5xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
           Meet Veda
         </h1>
