@@ -3,38 +3,50 @@
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEffect, useState, useMemo } from 'react';
-import type { Report, Task } from '@/lib/types';
-import { getAllReports, getAllTasks } from '@/lib/firestore';
+import type { Report, Task, UserProfile } from '@/lib/types';
+import { getAllReports, getAllTasks, getUsersInAgency, getTasksForAgency } from '@/lib/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Spinner from '@/components/shared/Spinner';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell } from 'recharts';
-import { Button } from '@/components/ui/button';
-import { Download, SlidersHorizontal } from 'lucide-react';
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarProvider } from '@/components/ui/sidebar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Bell, ChevronDown, Filter, HelpCircle, History, Menu, Settings, Mail } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+type TaskStatus = 'Pending' | 'In Progress' | 'Resolved';
 
 export default function GovtAdminDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [reports, setReports] = useState<Report[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  
+  const [stateFilter, setStateFilter] = useState<string>('All');
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | 'All'>('All');
+  const [sortFilter, setSortFilter] = useState<'Newest' | 'Oldest'>('Newest');
+
+  const allStates = useMemo(() => ['All', ...Array.from(new Set(tasks.map(t => t.agency)))], [tasks]);
 
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
       try {
-        const [reportsData, tasksData] = await Promise.all([
+        const [tasksData, reportsData] = await Promise.all([
+          getAllTasks(),
           getAllReports(),
-          getAllTasks()
         ]);
-        setReports(reportsData);
         setTasks(tasksData);
+        setReports(reportsData);
       } catch (error) {
         console.error("Error fetching admin data: ", error);
         toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch system-wide data.' });
@@ -44,190 +56,176 @@ export default function GovtAdminDashboard() {
     }
     fetchData();
   }, [toast]);
-
-  const analytics = useMemo(() => {
-    const reportVerdicts = reports.reduce((acc, report) => {
-        acc[report.aiVerdict] = (acc[report.aiVerdict] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
-
-    const taskStatuses = tasks.reduce((acc, task) => {
-        acc[task.status] = (acc[task.status] || 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
-
-    const topLocations = reports.reduce((acc, report) => {
-        if (report.location) {
-            acc[report.location] = (acc[report.location] || 0) + 1;
-        }
-        return acc;
-    }, {} as Record<string, number>);
-    
-    const topSources = reports.flatMap(r => r.sources).reduce((acc, source) => {
-        try {
-            const hostname = new URL(source).hostname;
-            acc[hostname] = (acc[hostname] || 0) + 1;
-        } catch (e) {
-            // ignore invalid URLs
-        }
-        return acc;
-    }, {} as Record<string, number>);
-
-    return {
-        reportVerdictsData: Object.entries(reportVerdicts).map(([name, value]) => ({ name, value })),
-        taskStatusesData: Object.entries(taskStatuses).map(([name, value]) => ({ name, value })),
-        topLocationsData: Object.entries(topLocations).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => ({name, count})),
-        topSourcesData: Object.entries(topSources).sort((a,b) => b[1] - a[1]).slice(0,5).map(([name, count]) => ({name, count}))
-    };
-  }, [reports, tasks]);
   
-  const getStatusVariant = (status: Report['status'] | Task['status']) => {
+  const filteredAndSortedTasks = useMemo(() => {
+    let filtered = tasks;
+
+    if (stateFilter !== 'All') {
+        filtered = filtered.filter(task => task.agency === stateFilter);
+    }
+    if (statusFilter !== 'All') {
+        filtered = filtered.filter(task => task.status === statusFilter);
+    }
+    
+    return filtered.sort((a, b) => {
+        if (sortFilter === 'Newest') {
+            return b.createdAt - a.createdAt;
+        }
+        return a.createdAt - b.createdAt;
+    });
+  }, [tasks, stateFilter, statusFilter, sortFilter]);
+
+  const selectedReport = useMemo(() => {
+      if (!selectedTask) return null;
+      return reports.find(r => r.id === selectedTask.reportId) || null;
+  }, [selectedTask, reports]);
+
+  const getStatusVariant = (status: Task['status']) => {
     switch (status) {
-      case 'Queued':
-        return 'secondary';
-      case 'Under Review':
-      case 'In Progress':
-        return 'default';
-      case 'Verified':
-      case 'Cleared':
-      case 'Resolved':
-        return 'outline';
-      case 'Re-Verification':
-        return 'destructive';
-      default:
-        return 'secondary';
+      case 'Pending': return 'secondary';
+      case 'In Progress': return 'default';
+      case 'Resolved': return 'outline';
+      default: return 'secondary';
     }
   };
 
-
   return (
-    <div className="container py-12">
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle>Government Admin Dashboard</CardTitle>
-                    <CardDescription>System-wide monitoring and analytics portal.</CardDescription>
+    <SidebarProvider>
+    <div className="flex min-h-screen bg-[#131314] text-gray-200">
+      <Sidebar>
+          <SidebarHeader>
+              <div className="flex items-center gap-2">
+                  <Button asChild variant="ghost" size="icon" className="w-10 h-10">
+                      <Link href="/dashboard/govt-admin">VEDA</Link>
+                  </Button>
+              </div>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton isActive><History /> Monitoring</SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarContent>
+          <SidebarFooter>
+             <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton><HelpCircle /> Help</SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton><Settings /> Settings</SidebarMenuButton>
+                </SidebarMenuItem>
+             </SidebarMenu>
+          </SidebarFooter>
+      </Sidebar>
+      <main className="flex-1 flex flex-col">
+          <header className="flex items-center justify-end p-4 border-b border-border gap-4">
+            <Button variant="link" asChild><Link href="/about">About</Link></Button>
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Avatar className="cursor-pointer">
+                        <AvatarImage src={`https://i.pravatar.cc/150?u=${user?.uid}`} />
+                        <AvatarFallback>{user?.name?.[0]}</AvatarFallback>
+                    </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>{user?.email}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>Manage your account</DropdownMenuItem>
+                    <DropdownMenuItem>Add account</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>Sign out</DropdownMenuItem>
+                </DropdownMenuContent>
+             </DropdownMenu>
+          </header>
+
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-[400px_1fr] lg:grid-cols-[450px_1fr] xl:grid-cols-[500px_1fr] overflow-hidden">
+            {/* Middle Pane - Cases Monitor */}
+            <div className="flex flex-col border-r border-border overflow-y-auto">
+                <div className="p-4 border-b border-border">
+                    <h2 className="text-xl font-semibold">State Cases Monitor</h2>
+                    <div className="grid grid-cols-2 gap-2 mt-4">
+                        <Select onValueChange={(v: 'Newest' | 'Oldest') => setSortFilter(v)} defaultValue='Newest'>
+                            <SelectTrigger> <SelectValue placeholder="Sort By" /> </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Newest">Newest to Oldest</SelectItem>
+                                <SelectItem value="Oldest">Oldest to Newest</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Select onValueChange={setStateFilter} defaultValue="All">
+                             <SelectTrigger> <SelectValue placeholder="Filter by State" /> </SelectTrigger>
+                            <SelectContent>
+                                {allStates.map(state => <SelectItem key={state} value={state}>{state}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                         <Select onValueChange={(v: TaskStatus | 'All') => setStatusFilter(v)} defaultValue="All">
+                             <SelectTrigger className="col-span-2"> <SelectValue placeholder="Filter by Status" /> </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="All">All Statuses</SelectItem>
+                                <SelectItem value="Pending">Pending</SelectItem>
+                                <SelectItem value="In Progress">In Progress</SelectItem>
+                                <SelectItem value="Resolved">Resolved</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
-                 <Button asChild variant="outline">
-                    <Link href="/dashboard/admin/audit-log">
-                        <SlidersHorizontal className="mr-2" />
-                        Audit Log
-                    </Link>
-                </Button>
-            </CardHeader>
-            <CardContent>
-                {loading ? <div className="flex justify-center items-center h-64"><Spinner /></div> :
-                <Tabs defaultValue="overview">
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="overview">Overview & Analytics</TabsTrigger>
-                        <TabsTrigger value="reports">All Reports</TabsTrigger>
-                        <TabsTrigger value="tasks">All Tasks</TabsTrigger>
-                    </TabsList>
+                {loading ? <div className="p-4"><Spinner/></div> : (
+                    <ul className="flex-1 overflow-y-auto">
+                        {filteredAndSortedTasks.map(task => (
+                            <li key={task.id} onClick={() => setSelectedTask(task)} className={`p-4 border-b border-border cursor-pointer hover:bg-muted/50 ${selectedTask?.id === task.id ? 'bg-muted' : ''}`}>
+                                <div className="flex justify-between items-start">
+                                    <p className="font-semibold truncate pr-4">Report ID: {task.reportId.substring(0,8)}...</p>
+                                    <Badge variant={getStatusVariant(task.status)} className="text-xs shrink-0">{task.status}</Badge>
+                                </div>
+                                <p className="text-sm text-muted-foreground mt-1">State: {task.agency}</p>
+                                <p className="text-sm text-muted-foreground">Date: {new Date(task.createdAt).toLocaleDateString()}</p>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+
+            {/* Right Pane - Case Details / Communication */}
+            <div className="flex flex-col overflow-y-auto p-6">
+                {selectedTask && selectedReport ? (
+                  <div className="space-y-6">
+                    <h2 className="text-2xl font-bold">Case Details: {selectedReport.id.substring(0,8)}</h2>
+                    <Separator/>
+
+                    <Card>
+                        <CardHeader><CardTitle>Submitted Report</CardTitle></CardHeader>
+                        <CardContent>
+                            <p className="p-4 bg-muted rounded-md">{selectedReport.contentData}</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader><CardTitle>AI Analysis</CardTitle></CardHeader>
+                         <CardContent className="space-y-2">
+                            <p><strong>Verdict:</strong> <Badge variant={selectedReport.aiVerdict === 'Fake' ? 'destructive' : 'default'}>{selectedReport.aiVerdict}</Badge></p>
+                            <p><strong>Confidence:</strong> {selectedReport.aiConfidenceScore}%</p>
+                         </CardContent>
+                    </Card>
                     
-                    <TabsContent value="overview" className="mt-6">
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Reports by AI Verdict</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <ChartContainer config={{}} className="min-h-[200px] w-full">
-                                        <PieChart>
-                                            <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                                            <Pie data={analytics.reportVerdictsData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                                                {analytics.reportVerdictsData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                ))}
-                                            </Pie>
-                                        </PieChart>
-                                    </ChartContainer>
-                                </CardContent>
-                            </Card>
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Tasks by Status</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                     <ChartContainer config={{}} className="min-h-[200px] w-full">
-                                        <BarChart data={analytics.taskStatusesData} layout="vertical" margin={{left: 20}}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis type="number" />
-                                            <YAxis type="category" dataKey="name" width={80} />
-                                            <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                                            <Bar dataKey="value" fill="hsl(var(--primary))" radius={4} />
-                                        </BarChart>
-                                    </ChartContainer>
-                                </CardContent>
-                            </Card>
-                             <Card className="col-span-1 md:col-span-2">
-                                <CardHeader className="flex flex-row items-center justify-between">
-                                    <CardTitle>Top Reporting Locations (Agencies)</CardTitle>
-                                    <Button variant="outline" size="sm"><Download className="mr-2"/> Export CSV</Button>
-                                </CardHeader>
-                                <CardContent>
-                                    <Table>
-                                        <TableHeader><TableRow><TableHead>Location/Agency</TableHead><TableHead className="text-right">Report Count</TableHead></TableRow></TableHeader>
-                                        <TableBody>
-                                            {analytics.topLocationsData.map(l => <TableRow key={l.name}><TableCell>{l.name}</TableCell><TableCell className="text-right">{l.count}</TableCell></TableRow>)}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
-                            <Card className="col-span-1 md:col-span-2">
-                                <CardHeader className="flex flex-row items-center justify-between">
-                                    <CardTitle>Most Common Misinformation Sources</CardTitle>
-                                     <Button variant="outline" size="sm"><Download className="mr-2"/> Export CSV</Button>
-                                </CardHeader>
-                                <CardContent>
-                                    <Table>
-                                        <TableHeader><TableRow><TableHead>Source Domain</TableHead><TableHead className="text-right">Occurrences</TableHead></TableRow></TableHeader>
-                                        <TableBody>
-                                            {analytics.topSourcesData.map(s => <TableRow key={s.name}><TableCell>{s.name}</TableCell><TableCell className="text-right">{s.count}</TableCell></TableRow>)}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent value="reports">
-                        <Table>
-                            <TableHeader><TableRow><TableHead>Case ID</TableHead><TableHead>Agency</TableHead><TableHead>Verdict</TableHead><TableHead>Status</TableHead><TableHead>Date</TableHead></TableRow></TableHeader>
-                            <TableBody>
-                                {reports.map(r => (
-                                    <TableRow key={r.id}>
-                                        <TableCell>{r.id.substring(0,8)}...</TableCell>
-                                        <TableCell>{r.location}</TableCell>
-                                        <TableCell><Badge variant={r.aiVerdict === 'Fake' ? 'destructive' : 'default'}>{r.aiVerdict}</Badge></TableCell>
-                                        <TableCell><Badge variant={getStatusVariant(r.status)}>{r.status}</Badge></TableCell>
-                                        <TableCell>{new Date(r.createdAt).toLocaleDateString()}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TabsContent>
-
-                    <TabsContent value="tasks">
-                        <Table>
-                            <TableHeader><TableRow><TableHead>Task ID</TableHead><TableHead>Agency</TableHead><TableHead>Department</TableHead><TableHead>Status</TableHead><TableHead>Updated</TableHead></TableRow></TableHeader>
-                            <TableBody>
-                                {tasks.map(t => (
-                                    <TableRow key={t.id}>
-                                        <TableCell>{t.id.substring(0,8)}...</TableCell>
-                                        <TableCell>{t.agency}</TableCell>
-                                        <TableCell>{t.department}</TableCell>
-                                        <TableCell><Badge variant={getStatusVariant(t.status)}>{t.status}</Badge></TableCell>
-                                        <TableCell>{new Date(t.updatedAt).toLocaleDateString()}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TabsContent>
-
-                </Tabs>
-                }
-            </CardContent>
-        </Card>
+                    <Card>
+                        <CardHeader><CardTitle>Communication</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            <Textarea placeholder="Enter a message for the assigned officers..."/>
+                            <Button><Mail className="mr-2"/> Notify Officers</Button>
+                        </CardContent>
+                    </Card>
+                  </div>
+                ) : (
+                    <div className="flex items-center justify-center h-full">
+                        <p className="text-muted-foreground">Select a case to view details</p>
+                    </div>
+                )}
+            </div>
+          </div>
+      </main>
     </div>
+    </SidebarProvider>
   );
 }
+
+    

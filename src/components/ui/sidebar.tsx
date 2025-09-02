@@ -176,7 +176,7 @@ const Sidebar = React.forwardRef<
     },
     ref
   ) => {
-    const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const { isMobile, state, openMobile, setOpenMobile, toggleSidebar } = useSidebar()
 
     if (collapsible === "none") {
       return (
@@ -192,6 +192,13 @@ const Sidebar = React.forwardRef<
         </div>
       )
     }
+    
+    // Add a hamburger menu for the main sidebar toggle
+    const HamburgerMenu = () => (
+        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="absolute top-2 right-2 md:hidden">
+            <PanelLeft />
+        </Button>
+    )
 
     if (isMobile) {
       return (
@@ -216,7 +223,7 @@ const Sidebar = React.forwardRef<
     return (
       <div
         ref={ref}
-        className={cn("group hidden md:block text-sidebar-foreground h-screen sticky top-0", className)}
+        className={cn("group hidden md:flex flex-col text-sidebar-foreground h-screen sticky top-0", className)}
         data-state={state}
         data-collapsible={state === "collapsed" ? collapsible : ""}
         data-variant={variant}
@@ -332,14 +339,19 @@ const SidebarHeader = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => {
-    const { state } = useSidebar();
+    const { state, toggleSidebar } = useSidebar();
   return (
     <div
       ref={ref}
       data-sidebar="header"
-      className={cn("flex flex-col gap-2 p-2", state === 'collapsed' && 'items-center', className)}
+      className={cn("flex items-center gap-2 p-2", state === 'collapsed' ? 'justify-center' : 'justify-between', className)}
       {...props}
-    />
+    >
+      {state === 'expanded' && props.children}
+      <Button variant="ghost" size="icon" className="w-8 h-8" onClick={toggleSidebar}>
+        <PanelLeft className="h-5 w-5" />
+      </Button>
+    </div>
   )
 })
 SidebarHeader.displayName = "SidebarHeader"
@@ -537,6 +549,13 @@ const SidebarMenuButton = React.forwardRef<
   ) => {
     const Comp = asChild ? Slot : "button"
     const { isMobile, state } = useSidebar()
+    
+    const content = (
+        <>
+            {children}
+            <span className={cn("truncate", state === "collapsed" && 'hidden')}>{props.title}</span>
+        </>
+    );
 
     const button = (
       <Comp
@@ -550,11 +569,10 @@ const SidebarMenuButton = React.forwardRef<
         {...props}
       >
         {children}
-        <span className={cn(state === "collapsed" && 'hidden')}>{props.title}</span>
-        </Comp>
+      </Comp>
     )
 
-    if (!tooltip && state === 'expanded') {
+    if (!tooltip || state === 'expanded') {
       return  <Comp
         ref={ref}
         data-sidebar="menu-button"
@@ -759,3 +777,5 @@ export {
   SidebarTrigger,
   useSidebar,
 }
+
+    
