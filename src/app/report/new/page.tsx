@@ -107,7 +107,7 @@ export default function NewReportPage() {
         aiConfidenceScore: result.confidenceScore,
         sources: result.sources,
         justification: result.justification,
-        status: 'Submitted',
+        status: 'Queued',
         createdAt: Date.now(),
       });
       

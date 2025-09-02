@@ -1,3 +1,4 @@
+
 'use client';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,20 +81,24 @@ export default function GovtAdminDashboard() {
     };
   }, [reports, tasks]);
   
-  const getStatusVariant = (status: Task['status'] | Report['status']) => {
+  const getStatusVariant = (status: Report['status'] | Task['status']) => {
     switch (status) {
-      case 'Pending':
-      case 'Submitted':
+      case 'Queued':
         return 'secondary';
+      case 'Under Review':
       case 'In Progress':
-      case 'Under Investigation':
         return 'default';
+      case 'Verified':
+      case 'Cleared':
       case 'Resolved':
         return 'outline';
+      case 'Re-Verification':
+        return 'destructive';
       default:
         return 'secondary';
     }
   };
+
 
   return (
     <div className="container py-12">

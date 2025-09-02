@@ -24,7 +24,7 @@ export interface Report {
     aiConfidenceScore: number;
     sources: string[];
     justification: string;
-    status: 'Submitted' | 'Under Investigation' | 'Resolved';
+    status: 'Queued' | 'Verified' | 'Re-Verification' | 'Under Review' | 'Cleared';
     createdAt: number; // Storing as a timestamp (Date.now())
 }
 

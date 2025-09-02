@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
         aiConfidenceScore: analysisResult.confidenceScore,
         sources: analysisResult.sources,
         justification: analysisResult.justification,
-        status: 'Submitted',
+        status: 'Queued',
         createdAt: Date.now(),
       });
       
