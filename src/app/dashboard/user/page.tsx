@@ -141,7 +141,7 @@ export default function GeneralUserDashboard() {
                 </SidebarFooter>
             </Sidebar>
 
-            <main className="flex-1 flex flex-col">
+            <main className="flex-1 flex flex-col h-screen">
                 <header className="flex items-center justify-end p-4">
                      <Avatar>
                         <AvatarImage src={`https://i.pravatar.cc/150?u=${user?.uid}`} />
