@@ -27,6 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const userProfile = userDoc.data() as UserProfile;
           setUser(userProfile);
         } else {
+          // This case might happen if user exists in Auth but not in Firestore.
+          // For now, we'll treat them as not logged in to our app's context.
           setUser(null);
         }
       } else {
