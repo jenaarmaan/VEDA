@@ -80,6 +80,7 @@ export default function SignupForm() {
           phone: values.phone,
           city: values.city,
           ageGroup: values.ageGroup,
+          state: values.city, // Using city as state for prototype
         },
         createdAt: serverTimestamp(),
       });
@@ -192,7 +193,7 @@ export default function SignupForm() {
                 name="city"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>City</FormLabel>
+                    <FormLabel>City / State</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g. Bengaluru" {...field} />
                     </FormControl>

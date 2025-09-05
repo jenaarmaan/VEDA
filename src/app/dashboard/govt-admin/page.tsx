@@ -155,28 +155,29 @@ export default function MinistryDashboard() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchData = async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const allTasks = await getAllTasks();
-      setTasks(allTasks);
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch data.' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (!authLoading && user) {
+    const fetchData = async () => {
+        if (!user) return;
+        setLoading(true);
+        try {
+            const allTasks = await getAllTasks();
+            setTasks(allTasks);
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch data.' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!authLoading) {
       fetchData();
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, toast]);
 
 
   const renderContent = () => {
-    if (loading) return <div className="flex justify-center items-center h-full"><Spinner /></div>;
+    if (loading || authLoading) return <div className="flex justify-center items-center h-full"><Spinner /></div>;
     
     return (
          <div className={cn("grid gap-6 transition-all duration-300", selectedTask ? "lg:grid-cols-2" : "lg:grid-cols-1")}>

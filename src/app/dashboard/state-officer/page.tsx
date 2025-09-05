@@ -22,6 +22,12 @@ import { cn } from '@/lib/utils';
 
 const TaskDetails = ({ task, users, onUpdate, onReassign, onClose }: { task: Task | null, users: UserProfile[], onUpdate: (taskId: string, status: Task['status']) => void, onReassign: (taskId: string, newAssignedTo: string) => void, onClose: () => void }) => {
   const [newAssignedTo, setNewAssignedTo] = useState('');
+  
+  useEffect(() => {
+    if (task) {
+      setNewAssignedTo('');
+    }
+  }, [task]);
 
   if (!task) return null;
 
@@ -55,7 +61,7 @@ const TaskDetails = ({ task, users, onUpdate, onReassign, onClose }: { task: Tas
         <div>
             <h4 className="font-semibold mb-2">Reassign Task</h4>
             <div className="flex gap-2">
-                <Select onValueChange={setNewAssignedTo}>
+                <Select onValueChange={setNewAssignedTo} value={newAssignedTo}>
                     <SelectTrigger><SelectValue placeholder="Select Officer" /></SelectTrigger>
                     <SelectContent>
                         {users.map(user => <SelectItem key={user.uid} value={user.uid}>{user.details.fullName}</SelectItem>)}
@@ -198,51 +204,59 @@ export default function StateOfficerDashboard() {
   const [activeView, setActiveView] = useState('investigations');
   const { toast } = useToast();
 
-  const fetchData = async () => {
-    if (!user || !user.details.state) return;
-    setLoading(true);
-    try {
-      const agencyTasks = await getTasksForAgency(user.details.state);
-      setTasks(agencyTasks);
-      const agencyUsers = await getUsersInAgency(user.details.state);
-      setUsers(agencyUsers);
-    } catch (error) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch data.' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchData = async () => {
+        if (!user || !user.details.state) return;
+        setLoading(true);
+        try {
+            const agencyTasks = await getTasksForAgency(user.details.state);
+            setTasks(agencyTasks);
+            const agencyUsers = await getUsersInAgency(user.details.state);
+            setUsers(agencyUsers);
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch data.' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (!authLoading && user) {
       fetchData();
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, toast]);
   
   const handleUpdateStatus = async (taskId: string, status: Task['status']) => {
     if(!user) return;
     try {
         await updateTaskStatus(taskId, status, user.uid);
         toast({ title: "Success", description: "Task status updated." });
+        
+        setTasks(prevTasks => prevTasks.map(task => 
+            task.id === taskId ? { ...task, status, updatedAt: Date.now() } : task
+        ));
+
         if(selectedTask?.id === taskId) {
             setSelectedTask(prev => prev ? {...prev, status, updatedAt: Date.now()} : null);
         }
-        fetchData(); // Refresh data
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
 
   const handleReassignTask = async (taskId: string, newAssignedTo: string) => {
-    if(!user) return;
+    if(!user || !newAssignedTo) return;
     try {
         await reassignTask(taskId, newAssignedTo, user.uid);
         toast({ title: "Success", description: "Task reassigned." });
-         if(selectedTask?.id === taskId) {
+        
+        setTasks(prevTasks => prevTasks.map(task => 
+            task.id === taskId ? { ...task, assignedTo: newAssignedTo, updatedAt: Date.now() } : task
+        ));
+
+        if(selectedTask?.id === taskId) {
             setSelectedTask(prev => prev ? {...prev, assignedTo: newAssignedTo, updatedAt: Date.now()} : null);
         }
-        fetchData();
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
@@ -250,7 +264,7 @@ export default function StateOfficerDashboard() {
 
 
   const renderContent = () => {
-    if (loading) return <div className="flex justify-center items-center h-full"><Spinner /></div>;
+    if (loading || authLoading) return <div className="flex justify-center items-center h-full"><Spinner /></div>;
     
     switch(activeView) {
         case 'investigations':
