@@ -5,7 +5,6 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { UserProfile } from '@/lib/types';
-import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -27,8 +26,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const userProfile = userDoc.data() as UserProfile;
           setUser(userProfile);
         } else {
-          // This case might happen if user exists in Auth but not in Firestore.
-          // For now, we'll treat them as not logged in to our app's context.
           setUser(null);
         }
       } else {
