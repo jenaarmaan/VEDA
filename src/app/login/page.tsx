@@ -1,6 +1,7 @@
+
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Building, Landmark, Bot } from 'lucide-react';
+import { User, Building, Landmark, Shield } from 'lucide-react';
 import { VedhaIcon } from '@/components/icons/VedhaIcon';
 
 const portalOptions = [
@@ -12,20 +13,20 @@ const portalOptions = [
   },
   {
     icon: <Landmark className="h-6 w-6 text-primary" />,
-    title: 'Government Authority',
+    title: 'Government Admin',
     description: 'Login for central government officials and agencies.',
     href: '/login/form',
   },
   {
-    icon: <Building className="h-6 w-6 text-primary" />,
-    title: 'State Authority/Officer',
-    description: 'Designated portal for state-level officers and authorities.',
+    icon: <Shield className="h-6 w-6 text-primary" />,
+    title: 'Agency Head',
+    description: 'Manage incoming reports and assign tasks to your team.',
     href: '/login/form',
   },
   {
-    icon: <Bot className="h-6 w-6 text-primary" />,
-    title: 'VEDA Employee',
-    description: 'Internal access for VEDA team members.',
+    icon: <Building className="h-6 w-6 text-primary" />,
+    title: 'State Officer',
+    description: 'Designated portal for state-level officers and authorities.',
     href: '/login/form',
   },
 ];
