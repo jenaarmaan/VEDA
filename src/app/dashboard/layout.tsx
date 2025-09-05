@@ -14,9 +14,28 @@ export default function DashboardLayout({
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
+    if (loading) {
+      return;
     }
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+    
+    // Role-based redirection
+    const dashboardRoutes: { [key: string]: string } = {
+        'civic': '/dashboard/user',
+        'sentinel': '/dashboard/sentinel',
+        'ground_sentinel': '/dashboard/ground-sentinel',
+        'council': '/dashboard/council'
+    };
+    
+    const targetRoute = dashboardRoutes[user.role];
+
+    if (targetRoute && window.location.pathname !== targetRoute) {
+        router.replace(targetRoute);
+    }
+
   }, [user, loading, router]);
 
   if (loading || !user) {
