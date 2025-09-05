@@ -7,11 +7,8 @@ import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Report } from '@/lib/types';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { FileText, Plus, Mic, ArrowUp, Settings, ToyBrick, Gamepad2, Search, BookOpen, FlaskConical, LifeBuoy, ChevronRight, History } from 'lucide-react';
+import { Plus, Mic, ArrowUp, Settings, ToyBrick, Gamepad2, Search, BookOpen, FlaskConical, LifeBuoy, ChevronRight, History } from 'lucide-react';
 import Spinner from '@/components/shared/Spinner';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   SidebarProvider,
@@ -148,7 +145,7 @@ export default function GeneralUserDashboard() {
                 <header className="flex items-center justify-end p-4">
                      <Avatar>
                         <AvatarImage src={`https://i.pravatar.cc/150?u=${user?.uid}`} />
-                        <AvatarFallback>{user?.name?.[0]}</AvatarFallback>
+                        <AvatarFallback>{user?.details.fullName?.[0]}</AvatarFallback>
                     </Avatar>
                 </header>
 

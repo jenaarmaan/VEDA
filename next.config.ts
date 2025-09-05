@@ -1,12 +1,13 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   images: {
     remotePatterns: [
@@ -24,14 +25,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    serverComponentsExternalPackages: [
-      '@genkit-ai/googleai',
-      'genkit',
-      'zod',
-      'uuid',
-    ],
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
   },
+  serverExternalPackages: [
+    '@genkit-ai/googleai',
+    'genkit',
+    'zod',
+    'uuid',
+  ],
 };
 
 export default nextConfig;
