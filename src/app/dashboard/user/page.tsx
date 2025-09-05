@@ -142,13 +142,6 @@ export default function GeneralUserDashboard() {
             </Sidebar>
 
             <main className="flex-1 flex flex-col h-screen">
-                <header className="flex items-center justify-end p-4">
-                     <Avatar>
-                        <AvatarImage src={`https://i.pravatar.cc/150?u=${user?.uid}`} />
-                        <AvatarFallback>{user?.details.fullName?.[0]}</AvatarFallback>
-                    </Avatar>
-                </header>
-
                 <div className="flex-grow flex flex-col items-center justify-center p-4">
                     <div className="w-full max-w-4xl flex flex-col items-center justify-center flex-grow">
                          <h1 className="text-5xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-12">
