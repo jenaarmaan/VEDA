@@ -1,5 +1,5 @@
 
-import { FieldValue } from "firebase/firestore";
+import { FieldValue, Timestamp } from "firebase/firestore";
 
 export type UserRole = 'civic' | 'sentinel' | 'ground_sentinel' | 'council';
 
@@ -16,31 +16,60 @@ export interface UserProfile {
   createdAt: FieldValue;
 }
 
-export interface CivicReport {
+export interface Report {
     id: string;
-    submittedBy: string; // uid of civic user
-    contentType: 'text' | 'image' | 'voice';
-    contentData: string; // text or URL to media
-    aiVerdict?: 'Verified' | 'Misleading' | 'Unverifiable';
-    status: 'Submitted' | 'Under Review' | 'Closed';
-    createdAt: FieldValue;
-}
-
-export interface SentinelCase {
-    id: string;
-    reportId: string; // from civic_reports
-    assignedTo: string; // uid of sentinel or ground_sentinel
-    status: 'New' | 'Investigation' | 'Resolved' | 'Escalated';
+    reportId: string;
+    submittedBy: string; 
+    contentType: 'text' | 'link' | 'image' | 'video' | 'document';
+    contentData: string;
+    location: string;
     notes: string;
-    evidence: string[]; // URLs to evidence
-    createdAt: FieldValue;
-    updatedAt: FieldValue;
+    aiVerdict: 'True' | 'Fake' | 'Unverifiable';
+    aiConfidenceScore: number;
+    sources: string[];
+    justification: string;
+    status: 'Queued' | 'Under Review' | 'Verified' | 'Re-Verification' | 'Cleared';
+    createdAt: number;
 }
 
-export interface CouncilLog {
+
+export interface Task {
     id: string;
-    actorId: string; // uid of council member
-    action: string; // e.g., 'viewed_case', 'generated_report'
+    taskId: string;
+    reportId: string;
+    assignedBy: string;
+    assignedTo: string;
+    department: string;
+    agency: string;
+    status: 'Pending' | 'In Progress' | 'Completed' | 'Escalated';
+    notes: string;
+    evidenceLinks: string[];
+    createdAt: number;
+    updatedAt: number;
+}
+
+export interface AuditLog {
+    id: string;
+    actorId: string;
+    actionType: string;
     details: Record<string, any>;
+    timestamp: Timestamp;
+}
+
+export interface Notification {
+    id: string;
+    userId: string;
+    message: string;
+    isRead: boolean;
+    createdAt: number;
+}
+
+export interface ContactMessage {
+    id?: string;
+    userId?: string;
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
     createdAt: FieldValue;
 }

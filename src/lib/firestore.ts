@@ -2,7 +2,7 @@
 import { collection, query, where, getDocs, orderBy, doc, getDoc, setDoc, serverTimestamp, updateDoc, addDoc, Timestamp, deleteDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import type { Report, Task, UserProfile, AuditLog, Notification } from './types';
+import type { Report, Task, UserProfile, AuditLog, Notification, ContactMessage } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 // Reports
@@ -29,36 +29,23 @@ export async function getUsersInAgency(agency: string): Promise<UserProfile[]> {
     return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
 }
 
-export async function getUsersInDepartment(agency: string, department: string): Promise<UserProfile[]> {
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, 
-        where('location', '==', agency), 
-        where('department', '==', department),
-        where('role', '==', 'agency_employee')
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
-}
-
 export async function addUserToAgency(userData: { name: string, email: string, password: string, position: string, phone: string, agency: string, role: 'agency_employee' }): Promise<UserProfile> {
     // This function should ideally be an admin-only callable cloud function for security.
     // For now, we create the user directly from the client, which is not secure for production.
     const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
     const user = userCredential.user;
 
-    const newUserProfile: Omit<UserProfile, 'uid'> = {
-        name: userData.name,
+    const newUserProfile: Omit<UserProfile, 'uid' | 'createdAt' | 'details' > & {details: Partial<UserProfile['details']>} = {
         email: userData.email,
-        role: userData.role,
-        age: 0, // Age can be optional or collected later
-        contact: userData.phone,
-        address: '', // Address can be optional
-        location: userData.agency,
-        department: userData.position,
+        role: 'sentinel', // Placeholder for a more complex role system
+        details: {
+          fullName: userData.name,
+          phone: userData.phone,
+        },
     };
 
     await setDoc(doc(db, 'users', user.uid), newUserProfile);
-    return { uid: user.uid, ...newUserProfile };
+    return { uid: user.uid, ...newUserProfile, createdAt: serverTimestamp(), details: user.photoURL as any };
 }
 
 export async function removeUserFromAgency(userId: string): Promise<void> {
@@ -94,17 +81,6 @@ export async function assignTask(taskData: { reportId: string, assignedBy: strin
   return taskId;
 }
 
-export async function assignTaskToEmployee(taskData: { reportId: string, assignedBy: string, assignedTo: string, agency: string }): Promise<string> {
-    const userDoc = await getDoc(doc(db, 'users', taskData.assignedTo));
-    if (!userDoc.exists()) throw new Error("User to assign not found");
-    const assigneeData = userDoc.data() as UserProfile;
-
-    return assignTask({
-        ...taskData,
-        department: assigneeData.department || 'General'
-    });
-}
-
 
 export async function getAllTasks(): Promise<Task[]> {
     const tasksRef = collection(db, 'tasks');
@@ -126,17 +102,6 @@ export async function getTasksForAgency(agency: string): Promise<Task[]> {
   const q = query(tasksRef, where('agency', '==', agency), orderBy('updatedAt', 'desc'));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
-}
-
-export async function getTasksForDepartment(agency: string, department: string): Promise<Task[]> {
-    const tasksRef = collection(db, 'tasks');
-    const q = query(tasksRef, 
-        where('agency', '==', agency), 
-        where('department', '==', department),
-        orderBy('updatedAt', 'desc')
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
 }
 
 export async function updateTaskStatus(taskId: string, status: Task['status'], actorId: string): Promise<void> {
@@ -207,4 +172,13 @@ export async function createNotification(userId: string, message: string): Promi
     console.log(`--- NOTIFICATION CREATED for ${userId} ---`);
     console.log(`Message: ${message}`);
     console.log("-----------------------------------------");
+}
+
+// Contact Messages
+export async function createContactMessage(messageData: Omit<ContactMessage, 'id' | 'createdAt'>): Promise<void> {
+    const contactsRef = collection(db, 'contacts');
+    await addDoc(contactsRef, {
+        ...messageData,
+        createdAt: serverTimestamp(),
+    });
 }
