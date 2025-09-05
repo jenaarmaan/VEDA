@@ -21,13 +21,13 @@ const roleDashboards = [
     href: "/dashboard/agency-head",
     icon: <Building className="h-6 w-6 text-primary" />,
   },
-    {
+  {
     role: "Agency Employee",
     description: "View and update the status of your assigned investigation tasks.",
     href: "/dashboard/agency-employee",
     icon: <UserCheck className="h-6 w-6 text-primary" />,
   },
-   {
+  {
     role: "State Officer",
     description: "Manage state-level cases and coordinate with your team.",
     href: "/dashboard/state-officer",
