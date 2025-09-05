@@ -1,32 +1,32 @@
 
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Building, Landmark, Shield } from 'lucide-react';
+import { User, Shield, Building, Landmark } from 'lucide-react';
 import { VedhaIcon } from '@/components/icons/VedhaIcon';
 
 const portalOptions = [
   {
     icon: <User className="h-6 w-6 text-primary" />,
-    title: 'General User',
-    description: 'Access the platform as a regular user to verify information.',
-    href: '/login/form',
-  },
-  {
-    icon: <Landmark className="h-6 w-6 text-primary" />,
-    title: 'Government Admin',
-    description: 'Login for central government officials and agencies.',
+    title: 'Civic User',
+    description: 'Submit reports, verify information, and engage with the truth-seeking community.',
     href: '/login/form',
   },
   {
     icon: <Shield className="h-6 w-6 text-primary" />,
-    title: 'Agency Head',
-    description: 'Manage incoming reports and assign tasks to your team.',
+    title: 'Sentinel',
+    description: 'Investigate and manage cases, analyze evidence, and collaborate on fact-finding missions.',
     href: '/login/form',
   },
   {
     icon: <Building className="h-6 w-6 text-primary" />,
-    title: 'State Officer',
-    description: 'Designated portal for state-level officers and authorities.',
+    title: 'Ground Sentinel',
+    description: 'Conduct on-field verifications, gather local intelligence, and report findings.',
+    href: '/login/form',
+  },
+  {
+    icon: <Landmark className="h-6 w-6 text-primary" />,
+    title: 'Council',
+    description: 'Oversee system-wide analytics, monitor logs, and manage platform integrity.',
     href: '/login/form',
   },
 ];
