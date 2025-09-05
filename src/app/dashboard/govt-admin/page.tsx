@@ -18,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
-const TaskDetails = ({ task, onClose }: { task: Task, onClose: () => void }) => {
+const TaskDetails = ({ task, onClose }: { task: Task | null, onClose: () => void }) => {
   if (!task) return null;
 
   return (
@@ -163,7 +163,7 @@ export default function MinistryDashboard() {
   };
 
   useEffect(() => {
-    if (!authLoading) {
+    if (!authLoading && user) {
       fetchData();
     }
   }, [user, authLoading]);
@@ -227,5 +227,3 @@ export default function MinistryDashboard() {
     </SidebarProvider>
   );
 }
-
-    

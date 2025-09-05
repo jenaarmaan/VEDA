@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
-import { getAllTasks, getUsersInAgency, assignTask, updateTaskStatus, reassignTask } from '@/lib/firestore';
+import { getTasksForAgency, getUsersInAgency, assignTask, updateTaskStatus, reassignTask } from '@/lib/firestore';
 import type { Task, UserProfile } from '@/lib/types';
 import Spinner from '@/components/shared/Spinner';
 import { useToast } from '@/hooks/use-toast';
@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { cn } from '@/lib/utils';
 
 
-const TaskDetails = ({ task, users, onUpdate, onReassign, onClose }: { task: Task, users: UserProfile[], onUpdate: (taskId: string, status: Task['status']) => void, onReassign: (taskId: string, newAssignedTo: string) => void, onClose: () => void }) => {
+const TaskDetails = ({ task, users, onUpdate, onReassign, onClose }: { task: Task | null, users: UserProfile[], onUpdate: (taskId: string, status: Task['status']) => void, onReassign: (taskId: string, newAssignedTo: string) => void, onClose: () => void }) => {
   const [newAssignedTo, setNewAssignedTo] = useState('');
 
   if (!task) return null;
@@ -193,14 +193,15 @@ export default function StateOfficerDashboard() {
   const { toast } = useToast();
 
   const fetchData = async () => {
-    if (!user) return;
+    if (!user || !user.details.state) return;
     setLoading(true);
     try {
-      const allTasks = await getAllTasks(); // Assuming state officer sees all tasks for now.
-      setTasks(allTasks);
-      // const agencyUsers = await getUsersInAgency(user.location); // Fetch users for the officer's agency
-      // setUsers(agencyUsers);
+      const agencyTasks = await getTasksForAgency(user.details.state);
+      setTasks(agencyTasks);
+      const agencyUsers = await getUsersInAgency(user.details.state);
+      setUsers(agencyUsers);
     } catch (error) {
+      console.error(error);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch data.' });
     } finally {
       setLoading(false);
@@ -208,7 +209,7 @@ export default function StateOfficerDashboard() {
   };
 
   useEffect(() => {
-    if (!authLoading) {
+    if (!authLoading && user) {
       fetchData();
     }
   }, [user, authLoading]);
@@ -220,7 +221,7 @@ export default function StateOfficerDashboard() {
         toast({ title: "Success", description: "Task status updated." });
         fetchData(); // Refresh data
         if(selectedTask?.id === taskId) {
-            setSelectedTask(prev => prev ? {...prev, status} : null);
+            setSelectedTask(prev => prev ? {...prev, status, updatedAt: Date.now()} : null);
         }
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -234,7 +235,7 @@ export default function StateOfficerDashboard() {
         toast({ title: "Success", description: "Task reassigned." });
         fetchData();
          if(selectedTask?.id === taskId) {
-            setSelectedTask(prev => prev ? {...prev, assignedTo: newAssignedTo} : null);
+            setSelectedTask(prev => prev ? {...prev, assignedTo: newAssignedTo, updatedAt: Date.now()} : null);
         }
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -314,5 +315,3 @@ export default function StateOfficerDashboard() {
     </SidebarProvider>
   );
 }
-
-    

@@ -24,7 +24,7 @@ export async function getAllReports(): Promise<Report[]> {
 // Users
 export async function getUsersInAgency(agency: string): Promise<UserProfile[]> {
     const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('location', '==', agency));
+    const q = query(usersRef, where('details.state', '==', agency));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
 }

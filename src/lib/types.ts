@@ -1,7 +1,7 @@
 
 import { FieldValue, Timestamp } from "firebase/firestore";
 
-export type UserRole = 'civic' | 'sentinel' | 'ground_sentinel' | 'council';
+export type UserRole = 'civic' | 'sentinel' | 'ground-sentinel' | 'council' | 'state-officer' | 'govt-admin';
 
 export interface UserProfile {
   uid: string;
@@ -10,8 +10,19 @@ export interface UserProfile {
   details: {
     fullName: string;
     phone: string;
-    city: string;
-    ageGroup: '18-25' | '26-35' | '36-50' | '51+';
+    city?: string;
+    ageGroup?: '18-25' | '26-35' | '36-50' | '51+';
+    // Sentinel specific
+    designation?: string;
+    agencyName?: string;
+    state?: string;
+    employeeId?: string;
+    // Ground Sentinel specific
+    assignedSentinel?: string;
+     // Council specific
+    organization?: string;
+    roleType?: string;
+    accessLevel?: string;
   };
   createdAt: FieldValue;
 }
