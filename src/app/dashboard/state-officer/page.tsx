@@ -125,14 +125,20 @@ const TaskList = ({ tasks, onTaskSelect, users }: { tasks: Task[], onTaskSelect:
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredAndSortedTasks.map(task => (
-                            <TableRow key={task.id} onClick={() => onTaskSelect(task)} className="cursor-pointer">
-                                <TableCell className="font-medium">{task.reportId.substring(0, 8)}</TableCell>
-                                <TableCell>{users.find(u => u.uid === task.assignedTo)?.details.fullName || 'N/A'}</TableCell>
-                                <TableCell><Badge variant={getStatusVariant(task.status)}>{task.status}</Badge></TableCell>
-                                <TableCell>{new Date(task.updatedAt).toLocaleDateString()}</TableCell>
+                        {filteredAndSortedTasks.length > 0 ? (
+                          filteredAndSortedTasks.map(task => (
+                              <TableRow key={task.id} onClick={() => onTaskSelect(task)} className="cursor-pointer">
+                                  <TableCell className="font-medium">{task.reportId.substring(0, 8)}</TableCell>
+                                  <TableCell>{users.find(u => u.uid === task.assignedTo)?.details.fullName || 'N/A'}</TableCell>
+                                  <TableCell><Badge variant={getStatusVariant(task.status)}>{task.status}</Badge></TableCell>
+                                  <TableCell>{new Date(task.updatedAt).toLocaleDateString()}</TableCell>
+                              </TableRow>
+                          ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={4} className="text-center">No tasks found.</TableCell>
                             </TableRow>
-                        ))}
+                        )}
                     </TableBody>
                 </Table>
             </CardContent>
@@ -219,10 +225,10 @@ export default function StateOfficerDashboard() {
     try {
         await updateTaskStatus(taskId, status, user.uid);
         toast({ title: "Success", description: "Task status updated." });
-        fetchData(); // Refresh data
         if(selectedTask?.id === taskId) {
             setSelectedTask(prev => prev ? {...prev, status, updatedAt: Date.now()} : null);
         }
+        fetchData(); // Refresh data
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
@@ -233,10 +239,10 @@ export default function StateOfficerDashboard() {
     try {
         await reassignTask(taskId, newAssignedTo, user.uid);
         toast({ title: "Success", description: "Task reassigned." });
-        fetchData();
          if(selectedTask?.id === taskId) {
             setSelectedTask(prev => prev ? {...prev, assignedTo: newAssignedTo, updatedAt: Date.now()} : null);
         }
+        fetchData();
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
     }

@@ -42,7 +42,7 @@ const formSchema = z.object({
   phone: z.string().min(10, { message: 'Contact number must be at least 10 digits.' }),
   city: z.string().min(2, { message: 'City is required.' }),
   ageGroup: z.enum(['18-25', '26-35', '36-50', '51+']),
-  role: z.enum(['civic', 'sentinel', 'ground-sentinel', 'council']),
+  role: z.enum(['civic', 'sentinel', 'ground-sentinel', 'council', 'state-officer', 'govt-admin']),
 });
 
 export default function SignupForm() {
@@ -127,6 +127,8 @@ export default function SignupForm() {
                         <SelectItem value="sentinel">Sentinel</SelectItem>
                         <SelectItem value="ground-sentinel">Ground Sentinel</SelectItem>
                         <SelectItem value="council">Council</SelectItem>
+                        <SelectItem value="state-officer">State Officer</SelectItem>
+                        <SelectItem value="govt-admin">Govt. Admin</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

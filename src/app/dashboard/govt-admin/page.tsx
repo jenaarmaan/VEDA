@@ -126,14 +126,20 @@ const TaskList = ({ tasks, onTaskSelect }: { tasks: Task[], onTaskSelect: (task:
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredAndSortedTasks.map(task => (
-                            <TableRow key={task.id} onClick={() => onTaskSelect(task)} className="cursor-pointer">
-                                <TableCell className="font-medium">{task.reportId.substring(0, 8)}</TableCell>
-                                <TableCell>{task.agency}</TableCell>
-                                <TableCell><Badge variant={getStatusVariant(task.status)}>{task.status}</Badge></TableCell>
-                                <TableCell>{new Date(task.updatedAt).toLocaleDateString()}</TableCell>
-                            </TableRow>
-                        ))}
+                        {filteredAndSortedTasks.length > 0 ? (
+                          filteredAndSortedTasks.map(task => (
+                              <TableRow key={task.id} onClick={() => onTaskSelect(task)} className="cursor-pointer">
+                                  <TableCell className="font-medium">{task.reportId.substring(0, 8)}</TableCell>
+                                  <TableCell>{task.agency}</TableCell>
+                                  <TableCell><Badge variant={getStatusVariant(task.status)}>{task.status}</Badge></TableCell>
+                                  <TableCell>{new Date(task.updatedAt).toLocaleDateString()}</TableCell>
+                              </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center">No tasks found.</TableCell>
+                          </TableRow>
+                        )}
                     </TableBody>
                 </Table>
             </CardContent>
