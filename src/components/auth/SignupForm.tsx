@@ -30,21 +30,19 @@ import {
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 const formSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  fullName: z.string().min(2, { message: 'Full name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
-  age: z.coerce.number().int().positive({ message: 'Age must be a positive number.' }),
-  contact: z.string().min(10, { message: 'Contact number must be at least 10 digits.' }),
-  address: z.string().min(5, { message: 'Address is too short.' }),
-  location: z.string().min(2, { message: 'Location is too short.' }),
-  department: z.string().optional(),
-  role: z.enum(['general_user', 'govt_admin', 'agency_head', 'department_head', 'agency_employee', 'state_officer']),
+  phone: z.string().min(10, { message: 'Contact number must be at least 10 digits.' }),
+  city: z.string().min(2, { message: 'City is required.' }),
+  ageGroup: z.enum(['18-25', '26-35', '36-50', '51+']),
+  role: z.enum(['civic', 'sentinel', 'ground_sentinel', 'council']),
 });
 
 export default function SignupForm() {
@@ -55,10 +53,13 @@ export default function SignupForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
+      fullName: '',
       email: '',
       password: '',
-      role: 'general_user',
+      phone: '',
+      city: '',
+      role: 'civic',
+      ageGroup: '18-25',
     },
   });
 
@@ -71,14 +72,16 @@ export default function SignupForm() {
 
       // Store user profile in Firestore
       await setDoc(doc(db, 'users', user.uid), {
-        name: values.name,
+        uid: user.uid,
         email: values.email,
-        age: values.age,
-        contact: values.contact,
-        address: values.address,
-        location: values.location,
-        department: values.department || '',
         role: values.role,
+        details: {
+          fullName: values.fullName,
+          phone: values.phone,
+          city: values.city,
+          ageGroup: values.ageGroup,
+        },
+        createdAt: serverTimestamp(),
       });
 
       toast({
@@ -97,8 +100,6 @@ export default function SignupForm() {
     }
   }
 
-  const selectedRole = form.watch('role');
-
   return (
     <Card className="w-full max-w-lg">
       <CardHeader>
@@ -111,12 +112,48 @@ export default function SignupForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="name"
+                name="role"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Role</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="civic">Civic User</SelectItem>
+                        <SelectItem value="sentinel">Sentinel</SelectItem>
+                        <SelectItem value="ground_sentinel">Ground Sentinel</SelectItem>
+                        <SelectItem value="council">Council</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="fullName"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
                       <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="9876543210" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -150,12 +187,12 @@ export default function SignupForm() {
               />
               <FormField
                 control={form.control}
-                name="age"
+                name="city"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Age</FormLabel>
+                    <FormLabel>City</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="25" {...field} />
+                      <Input placeholder="e.g. Bengaluru" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -163,83 +200,27 @@ export default function SignupForm() {
               />
                <FormField
                 control={form.control}
-                name="contact"
+                name="ageGroup"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Contact</FormLabel>
-                    <FormControl>
-                      <Input placeholder="123-456-7890" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl>
-                      <Input placeholder="123 Main St" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Location / Agency</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Mumbai Police" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Role</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormLabel>Age Group</FormLabel>
+                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select your role" />
+                          <SelectValue placeholder="Select your age group" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="general_user">General User</SelectItem>
-                        <SelectItem value="govt_admin">Government Admin</SelectItem>
-                        <SelectItem value="agency_head">Agency Head</SelectItem>
-                        <SelectItem value="state_officer">State Officer</SelectItem>
-                        <SelectItem value="department_head">Department Head</SelectItem>
-                        <SelectItem value="agency_employee">Agency Employee</SelectItem>
+                        <SelectItem value="18-25">18-25</SelectItem>
+                        <SelectItem value="26-35">26-35</SelectItem>
+                        <SelectItem value="36-50">36-50</SelectItem>
+                        <SelectItem value="51+">51+</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              {(selectedRole === 'department_head' || selectedRole === 'agency_employee') && (
-                 <FormField
-                    control={form.control}
-                    name="department"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Department</FormLabel>
-                        <FormControl>
-                        <Input placeholder="e.g. Cyber Crime" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-              )}
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>

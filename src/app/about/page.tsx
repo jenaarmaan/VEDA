@@ -1,37 +1,31 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowRight, Building, Landmark, User, UserCheck, Shield } from "lucide-react";
+import { ArrowRight, User, Shield, Landmark, Building } from "lucide-react";
 import Link from "next/link";
 
 const roleDashboards = [
   {
-    role: "General User",
-    description: "Access the dashboard for submitting and tracking reports.",
+    role: "Civic User",
+    description: "Submit reports and verify information.",
     href: "/dashboard/user",
     icon: <User className="h-6 w-6 text-primary" />,
   },
   {
-    role: "Government Admin",
-    description: "Oversee system-wide analytics and all submitted reports.",
-    href: "/dashboard/govt-admin",
-    icon: <Landmark className="h-6 w-6 text-primary" />,
+    role: "Sentinel",
+    description: "Manage and investigate cases.",
+    href: "/dashboard/sentinel",
+    icon: <Shield className="h-6 w-6 text-primary" />,
   },
   {
-    role: "Agency Head",
-    description: "Manage incoming reports and assign tasks to your team.",
-    href: "/dashboard/agency-head",
+    role: "Ground Sentinel",
+    description: "Handle on-ground tasks and report findings.",
+    href: "/dashboard/ground-sentinel",
     icon: <Building className="h-6 w-6 text-primary" />,
   },
   {
-    role: "Agency Employee",
-    description: "View and update the status of your assigned investigation tasks.",
-    href: "/dashboard/agency-employee",
-    icon: <UserCheck className="h-6 w-6 text-primary" />,
-  },
-  {
-    role: "State Officer",
-    description: "Manage state-level cases and coordinate with your team.",
-    href: "/dashboard/state-officer",
-    icon: <Shield className="h-6 w-6 text-primary" />,
+    role: "Council",
+    description: "Oversee system-wide analytics and logs.",
+    href: "/dashboard/council",
+    icon: <Landmark className="h-6 w-6 text-primary" />,
   },
 ];
 
@@ -57,16 +51,16 @@ export default function AboutPage() {
             <h2 className="text-xl font-semibold mb-2">User Roles</h2>
             <p>The application defines four distinct user roles:</p>
             <ul className="list-disc pl-6 mt-2 space-y-1">
-              <li><strong>General User:</strong> Standard user with basic access to create reports.</li>
-              <li><strong>Government Admin:</strong> Administrator with high-level privileges to oversee the system.</li>
-              <li><strong>Agency Head:</strong> Manages an entire agency within the platform and assigns tasks.</li>
-              <li><strong>Agency Employee:</strong> Staff member of an agency with permissions to investigate tasks.</li>
+              <li><strong>Civic User:</strong> Standard user with basic access to create reports.</li>
+              <li><strong>Sentinel:</strong> Investigator with privileges to manage cases.</li>
+              <li><strong>Ground Sentinel:</strong> Field agent responsible for on-ground verification.</li>
+              <li><strong>Council:</strong> Administrator with high-level privileges to oversee the system.</li>
             </ul>
           </section>
            <section>
             <h2 className="text-xl font-semibold mb-2">Authentication</h2>
             <p>
-             Users can sign up and log in using either their email and password or their Google account. During signup, users provide necessary personal information which is securely stored.
+             Users can sign up and log in using their email and password. During signup, users provide necessary personal information which is securely stored.
             </p>
           </section>
         </CardContent>
@@ -74,7 +68,7 @@ export default function AboutPage() {
 
       <section className="mt-12">
         <h2 className="text-2xl font-semibold mb-6 text-center">Development Dashboards</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {roleDashboards.map((item) => (
                 <Link href={item.href} key={item.role} className="group">
                     <Card className="h-full hover:bg-accent/50 transition-colors">

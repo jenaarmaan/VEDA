@@ -1,62 +1,46 @@
 
-export type UserRole = 'general_user' | 'govt_admin' | 'agency_head' | 'department_head' | 'agency_employee' | 'state_officer';
+import { FieldValue } from "firebase/firestore";
+
+export type UserRole = 'civic' | 'sentinel' | 'ground_sentinel' | 'council';
 
 export interface UserProfile {
   uid: string;
   email: string;
-  name: string;
   role: UserRole;
-  age: number;
-  contact: string;
-  address: string;
-  location: string; // Represents the agency for agency members
-  department?: string; // For department heads and employees
+  details: {
+    fullName: string;
+    phone: string;
+    city: string;
+    ageGroup: '18-25' | '26-35' | '36-50' | '51+';
+  };
+  createdAt: FieldValue;
 }
 
-export interface Report {
+export interface CivicReport {
     id: string;
-    reportId: string;
-    submittedBy: string;
-    contentType: 'text' | 'link' | 'image' | 'video' | 'document';
-    contentData: string;
-    location: string; // The location/agency of the user who submitted the report
-    notes?: string;
-    aiVerdict: 'Fake' | 'True' | 'Unverifiable';
-    aiConfidenceScore: number;
-    sources: string[];
-    justification: string;
-    status: 'Queued' | 'Verified' | 'Re-Verification' | 'Under Review' | 'Cleared';
-    createdAt: number; // Storing as a timestamp (Date.now())
+    submittedBy: string; // uid of civic user
+    contentType: 'text' | 'image' | 'voice';
+    contentData: string; // text or URL to media
+    aiVerdict?: 'Verified' | 'Misleading' | 'Unverifiable';
+    status: 'Submitted' | 'Under Review' | 'Closed';
+    createdAt: FieldValue;
 }
 
-export interface Task {
+export interface SentinelCase {
     id: string;
-    taskId: string;
-    reportId: string;
-    assignedBy: string;
-    assignedTo: string;
-    agency: string;
-    department: string;
-    status: 'Pending' | 'In Progress' | 'Resolved';
-    notes?: string;
-    evidenceLinks?: string[];
-    createdAt: number;
-    updatedAt: number;
+    reportId: string; // from civic_reports
+    assignedTo: string; // uid of sentinel or ground_sentinel
+    status: 'New' | 'Investigation' | 'Resolved' | 'Escalated';
+    notes: string;
+    evidence: string[]; // URLs to evidence
+    createdAt: FieldValue;
+    updatedAt: FieldValue;
 }
 
-export interface AuditLog {
+export interface CouncilLog {
     id: string;
-    actorId: string;
-    actionType: string;
-    timestamp: { seconds: number, nanoseconds: number };
+    actorId: string; // uid of council member
+    action: string; // e.g., 'viewed_case', 'generated_report'
     details: Record<string, any>;
-}
-
-export interface Notification {
-    id: string;
-    userId: string;
-    message: string;
-    isRead: boolean;
-    createdAt: number;
-    link?: string; // Optional link to the relevant page (e.g., task details)
+    createdAt: FieldValue;
 }
