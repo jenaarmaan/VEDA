@@ -1,0 +1,461 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VEDA User Profile Schema",
+  "description": "Schema for storing and validating user profiles in the VEDA educational system",
+  "type": "object",
+  "required": ["id", "literacyLevel", "language", "preferences", "progress", "learningHistory"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^user_[a-zA-Z0-9_]+$",
+      "description": "Unique identifier for the user"
+    },
+    "literacyLevel": {
+      "type": "string",
+      "enum": ["beginner", "intermediate", "advanced"],
+      "description": "Current digital literacy level"
+    },
+    "language": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+      "default": "en",
+      "description": "Preferred language code (ISO 639-1)"
+    },
+    "preferences": {
+      "$ref": "#/definitions/UserPreferences"
+    },
+    "progress": {
+      "$ref": "#/definitions/UserProgress"
+    },
+    "learningHistory": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/LearningSession"
+      },
+      "description": "History of learning sessions"
+    },
+    "profile": {
+      "$ref": "#/definitions/UserProfileInfo"
+    },
+    "settings": {
+      "$ref": "#/definitions/UserSettings"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Account creation timestamp"
+    },
+    "lastActive": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last activity timestamp"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "default": "1.0.0",
+      "description": "Profile schema version"
+    }
+  },
+  "definitions": {
+    "UserPreferences": {
+      "type": "object",
+      "required": ["difficulty", "learningStyle", "topics", "notifications"],
+      "properties": {
+        "difficulty": {
+          "type": "string",
+          "enum": ["beginner", "intermediate", "advanced"],
+          "description": "Preferred difficulty level"
+        },
+        "learningStyle": {
+          "type": "string",
+          "enum": ["visual", "textual", "interactive"],
+          "description": "Preferred learning style"
+        },
+        "topics": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["health", "politics", "science", "technology", "economy", "social", "environment", "general"]
+          },
+          "description": "Topics of interest"
+        },
+        "notifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to receive notifications"
+        },
+        "emailUpdates": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to receive email updates"
+        },
+        "dailyGoals": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "targetMinutes": {
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 120,
+              "default": 15
+            },
+            "targetQuizzes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "default": 1
+            }
+          }
+        },
+        "accessibility": {
+          "type": "object",
+          "properties": {
+            "fontSize": {
+              "type": "string",
+              "enum": ["small", "medium", "large"],
+              "default": "medium"
+            },
+            "highContrast": {
+              "type": "boolean",
+              "default": false
+            },
+            "screenReader": {
+              "type": "boolean",
+              "default": false
+            },
+            "reducedMotion": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        }
+      }
+    },
+    "UserProgress": {
+      "type": "object",
+      "required": ["totalPoints", "level", "badges", "completedModules", "streak", "lastActivity"],
+      "properties": {
+        "totalPoints": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Total points earned"
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 1,
+          "description": "Current user level"
+        },
+        "badges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Badge"
+          },
+          "description": "Earned badges"
+        },
+        "completedModules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "IDs of completed modules"
+        },
+        "streak": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Current learning streak in days"
+        },
+        "lastActivity": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last activity timestamp"
+        },
+        "totalTimeSpent": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Total time spent learning in minutes"
+        },
+        "quizzesCompleted": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Total number of quizzes completed"
+        },
+        "averageScore": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 0,
+          "description": "Average quiz score"
+        },
+        "achievements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Achievement IDs"
+        }
+      }
+    },
+    "Badge": {
+      "type": "object",
+      "required": ["id", "name", "description", "icon", "earnedAt", "category"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique badge identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Badge display name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Badge description"
+        },
+        "icon": {
+          "type": "string",
+          "description": "Badge icon (emoji or URL)"
+        },
+        "earnedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the badge was earned"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["achievement", "skill", "milestone", "special"],
+          "description": "Badge category"
+        },
+        "rarity": {
+          "type": "string",
+          "enum": ["common", "uncommon", "rare", "epic", "legendary"],
+          "default": "common",
+          "description": "Badge rarity level"
+        },
+        "points": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Points awarded for earning this badge"
+        }
+      }
+    },
+    "LearningSession": {
+      "type": "object",
+      "required": ["id", "moduleId", "startTime", "completed", "interactions"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique session identifier"
+        },
+        "moduleId": {
+          "type": "string",
+          "description": "ID of the learning module"
+        },
+        "startTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Session start timestamp"
+        },
+        "endTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Session end timestamp"
+        },
+        "score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Session score (if applicable)"
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the session was completed"
+        },
+        "interactions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UserInteraction"
+          },
+          "description": "User interactions during the session"
+        },
+        "duration": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Session duration in seconds"
+        },
+        "device": {
+          "type": "string",
+          "enum": ["desktop", "mobile", "tablet"],
+          "description": "Device used for the session"
+        },
+        "browser": {
+          "type": "string",
+          "description": "Browser used for the session"
+        }
+      }
+    },
+    "UserInteraction": {
+      "type": "object",
+      "required": ["type", "timestamp", "data"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["quiz_answer", "explanation_view", "resource_access", "recommendation_follow"],
+          "description": "Type of interaction"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Interaction timestamp"
+        },
+        "data": {
+          "type": "object",
+          "description": "Interaction-specific data"
+        },
+        "duration": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Interaction duration in seconds"
+        },
+        "success": {
+          "type": "boolean",
+          "description": "Whether the interaction was successful"
+        }
+      }
+    },
+    "UserProfileInfo": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 50,
+          "description": "User's display name"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User's email address"
+        },
+        "age": {
+          "type": "integer",
+          "minimum": 13,
+          "maximum": 120,
+          "description": "User's age"
+        },
+        "location": {
+          "type": "string",
+          "description": "User's location (country/region)"
+        },
+        "education": {
+          "type": "string",
+          "enum": ["high_school", "some_college", "bachelor", "master", "doctorate", "other"],
+          "description": "Education level"
+        },
+        "occupation": {
+          "type": "string",
+          "description": "User's occupation"
+        },
+        "interests": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "User's interests"
+        },
+        "goals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Learning goals"
+        }
+      }
+    },
+    "UserSettings": {
+      "type": "object",
+      "properties": {
+        "privacy": {
+          "type": "object",
+          "properties": {
+            "profileVisibility": {
+              "type": "string",
+              "enum": ["public", "friends", "private"],
+              "default": "private"
+            },
+            "showProgress": {
+              "type": "boolean",
+              "default": true
+            },
+            "showBadges": {
+              "type": "boolean",
+              "default": true
+            },
+            "dataSharing": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        },
+        "learning": {
+          "type": "object",
+          "properties": {
+            "autoAdvance": {
+              "type": "boolean",
+              "default": false
+            },
+            "showHints": {
+              "type": "boolean",
+              "default": true
+            },
+            "timeLimit": {
+              "type": "integer",
+              "minimum": 30,
+              "maximum": 3600,
+              "description": "Default time limit for quizzes in seconds"
+            },
+            "retryAttempts": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5,
+              "default": 3
+            }
+          }
+        },
+        "ui": {
+          "type": "object",
+          "properties": {
+            "theme": {
+              "type": "string",
+              "enum": ["light", "dark", "auto"],
+              "default": "auto"
+            },
+            "language": {
+              "type": "string",
+              "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+              "default": "en"
+            },
+            "timezone": {
+              "type": "string",
+              "description": "User's timezone"
+            },
+            "dateFormat": {
+              "type": "string",
+              "enum": ["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"],
+              "default": "MM/DD/YYYY"
+            }
+          }
+        }
+      }
+    }
+  }
+}
