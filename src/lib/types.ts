@@ -1,7 +1,7 @@
 
 import { FieldValue, Timestamp } from "firebase/firestore";
 
-export type UserRole = 'civic' | 'sentinel' | 'ground-sentinel' | 'council' | 'state-officer' | 'govt-admin';
+export type UserRole = 'civic' | 'sentinel' | 'ground_sentinel' | 'council' | 'state_officer' | 'govt_admin';
 
 export interface UserProfile {
   uid: string;

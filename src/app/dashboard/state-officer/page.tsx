@@ -10,12 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/context/AuthContext';
-import { getTasksForAgency, getUsersInAgency, assignTask, updateTaskStatus, reassignTask } from '@/lib/firestore';
+import { getTasksForAgency, getUsersInAgency, updateTaskStatus, reassignTask } from '@/lib/firestore';
 import type { Task, UserProfile } from '@/lib/types';
 import Spinner from '@/components/shared/Spinner';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
@@ -232,13 +231,15 @@ export default function StateOfficerDashboard() {
         await updateTaskStatus(taskId, status, user.uid);
         toast({ title: "Success", description: "Task status updated." });
         
-        setTasks(prevTasks => prevTasks.map(task => 
+        const updatedTasks = tasks.map(task => 
             task.id === taskId ? { ...task, status, updatedAt: Date.now() } : task
-        ));
-
-        if(selectedTask?.id === taskId) {
-            setSelectedTask(prev => prev ? {...prev, status, updatedAt: Date.now()} : null);
+        );
+        setTasks(updatedTasks);
+        
+        if (selectedTask?.id === taskId) {
+            setSelectedTask(updatedTasks.find(t => t.id === taskId) || null);
         }
+
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
@@ -250,16 +251,21 @@ export default function StateOfficerDashboard() {
         await reassignTask(taskId, newAssignedTo, user.uid);
         toast({ title: "Success", description: "Task reassigned." });
         
-        setTasks(prevTasks => prevTasks.map(task => 
+        const updatedTasks = tasks.map(task => 
             task.id === taskId ? { ...task, assignedTo: newAssignedTo, updatedAt: Date.now() } : task
-        ));
+        );
+        setTasks(updatedTasks);
 
         if(selectedTask?.id === taskId) {
-            setSelectedTask(prev => prev ? {...prev, assignedTo: newAssignedTo, updatedAt: Date.now()} : null);
+            setSelectedTask(updatedTasks.find(t => t.id === taskId) || null);
         }
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
+  };
+  
+  const handleTaskSelect = (task: Task) => {
+    setSelectedTask(task);
   };
 
 
@@ -271,7 +277,7 @@ export default function StateOfficerDashboard() {
             return (
                  <div className={cn("grid gap-6 transition-all duration-300", selectedTask ? "lg:grid-cols-2" : "lg:grid-cols-1")}>
                     <div className="col-span-1">
-                       <TaskList tasks={tasks} onTaskSelect={setSelectedTask} users={users} />
+                       <TaskList tasks={tasks} onTaskSelect={handleTaskSelect} users={users} />
                     </div>
                     {selectedTask && (
                         <div className="col-span-1">

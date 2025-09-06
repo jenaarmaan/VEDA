@@ -8,8 +8,8 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
-import { v4 as uuidv4 } from 'uuid';
+import { z } from 'genkit/zod';
+
 
 const AnalyzeContentInputSchema = z.object({
   contentType: z.enum(['text', 'link', 'image', 'video', 'document']),
@@ -25,15 +25,11 @@ const AnalyzeContentOutputSchema = z.object({
 });
 export type AnalyzeContentOutput = z.infer<typeof AnalyzeContentOutputSchema>;
 
-export async function analyzeContent(input: AnalyzeContentInput): Promise<AnalyzeContentOutput> {
-  return analyzeContentFlow(input);
-}
-
 const prompt = ai.definePrompt({
-  name: 'analyzeContentPrompt',
-  input: { schema: AnalyzeContentInputSchema },
-  output: { schema: AnalyzeContentOutputSchema },
-  prompt: `You are a highly advanced AI fact-checking expert for an organization named VEDA. Your task is to analyze the provided content and determine its authenticity.
+    name: 'analyzeContentPrompt',
+    input: { schema: AnalyzeContentInputSchema },
+    output: { schema: AnalyzeContentOutputSchema },
+    prompt: `You are a highly advanced AI fact-checking expert for an organization named VEDA. Your task is to analyze the provided content and determine its authenticity.
 
 You must provide a clear verdict, a confidence score, a detailed justification, and a list of credible sources.
 
@@ -56,6 +52,7 @@ Produce the output in the required JSON format.
 `,
 });
 
+
 const analyzeContentFlow = ai.defineFlow(
   {
     name: 'analyzeContentFlow',
@@ -63,10 +60,16 @@ const analyzeContentFlow = ai.defineFlow(
     outputSchema: AnalyzeContentOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
+    const response = await prompt(input);
+    const output = response.output;
     if (!output) {
         throw new Error("AI analysis failed to produce a valid output.");
     }
     return output;
   }
 );
+
+
+export async function analyzeContent(input: AnalyzeContentInput): Promise<AnalyzeContentOutput> {
+  return analyzeContentFlow(input);
+}

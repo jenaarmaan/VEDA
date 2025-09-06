@@ -175,6 +175,10 @@ export default function MinistryDashboard() {
     }
   }, [user, authLoading, toast]);
 
+  const handleTaskSelect = (task: Task) => {
+    setSelectedTask(task);
+  };
+
 
   const renderContent = () => {
     if (loading || authLoading) return <div className="flex justify-center items-center h-full"><Spinner /></div>;
@@ -182,7 +186,7 @@ export default function MinistryDashboard() {
     return (
          <div className={cn("grid gap-6 transition-all duration-300", selectedTask ? "lg:grid-cols-2" : "lg:grid-cols-1")}>
             <div className="col-span-1">
-                <TaskList tasks={tasks} onTaskSelect={setSelectedTask} />
+                <TaskList tasks={tasks} onTaskSelect={handleTaskSelect} />
             </div>
             {selectedTask && (
                 <div className="col-span-1">
