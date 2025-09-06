@@ -29,6 +29,13 @@ export async function getUsersInAgency(agency: string): Promise<UserProfile[]> {
     return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
 }
 
+export async function getAllUsers(): Promise<UserProfile[]> {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, orderBy('email', 'asc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
+}
+
 export async function addUserToAgency(userData: { name: string, email: string, password: string, position: string, phone: string, agency: string, role: 'agency_employee' }): Promise<UserProfile> {
     // This function should ideally be an admin-only callable cloud function for security.
     // For now, we create the user directly from the client, which is not secure for production.
