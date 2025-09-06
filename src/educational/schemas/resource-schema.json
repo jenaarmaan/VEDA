@@ -1,0 +1,275 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VEDA Educational Resource Schema",
+  "description": "Schema for storing and validating educational resources in the VEDA platform",
+  "type": "object",
+  "required": ["id", "title", "url", "type", "description", "language", "difficulty"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^resource_[a-zA-Z0-9_]+$",
+      "description": "Unique identifier for the resource"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 200,
+      "description": "Display title of the resource"
+    },
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL or path to the resource"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["article", "video", "interactive", "tool", "guide"],
+      "description": "Type of educational resource"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 1000,
+      "description": "Detailed description of the resource content"
+    },
+    "language": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+      "default": "en",
+      "description": "Language code (ISO 639-1)"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": ["beginner", "intermediate", "advanced"],
+      "description": "Difficulty level of the resource"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["health", "politics", "science", "technology", "economy", "social", "environment", "general"],
+      "description": "Primary category of misinformation covered"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Additional tags for categorization and search"
+    },
+    "metadata": {
+      "$ref": "#/definitions/ResourceMetadata"
+    },
+    "accessibility": {
+      "$ref": "#/definitions/AccessibilityInfo"
+    },
+    "quality": {
+      "$ref": "#/definitions/QualityMetrics"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "default": "1.0.0",
+      "description": "Version of the resource"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Creation timestamp"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last update timestamp"
+    },
+    "author": {
+      "type": "string",
+      "description": "Author or creator of the resource"
+    },
+    "publisher": {
+      "type": "string",
+      "description": "Publisher or organization"
+    },
+    "license": {
+      "type": "string",
+      "description": "License information for the resource"
+    },
+    "cost": {
+      "type": "string",
+      "enum": ["free", "paid", "subscription"],
+      "default": "free",
+      "description": "Cost model for accessing the resource"
+    }
+  },
+  "definitions": {
+    "ResourceMetadata": {
+      "type": "object",
+      "properties": {
+        "estimatedTime": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 480,
+          "description": "Estimated time to consume the resource in minutes"
+        },
+        "fileSize": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "File size in bytes (for downloadable resources)"
+        },
+        "format": {
+          "type": "string",
+          "description": "File format (e.g., 'pdf', 'mp4', 'html')"
+        },
+        "duration": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Duration in seconds (for video/audio resources)"
+        },
+        "pages": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of pages (for text resources)"
+        },
+        "interactive": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the resource is interactive"
+        },
+        "offlineAvailable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the resource can be used offline"
+        },
+        "mobileFriendly": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the resource is optimized for mobile devices"
+        },
+        "prerequisites": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Required knowledge or completed resources"
+        },
+        "learningObjectives": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Learning objectives for this resource"
+        },
+        "keywords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Keywords for search and discovery"
+        }
+      }
+    },
+    "AccessibilityInfo": {
+      "type": "object",
+      "properties": {
+        "screenReaderCompatible": {
+          "type": "boolean",
+          "default": true,
+          "description": "Compatible with screen readers"
+        },
+        "keyboardNavigation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Supports keyboard navigation"
+        },
+        "highContrast": {
+          "type": "boolean",
+          "default": false,
+          "description": "High contrast mode available"
+        },
+        "textToSpeech": {
+          "type": "boolean",
+          "default": false,
+          "description": "Text-to-speech functionality available"
+        },
+        "captions": {
+          "type": "boolean",
+          "default": false,
+          "description": "Captions available for video content"
+        },
+        "transcript": {
+          "type": "boolean",
+          "default": false,
+          "description": "Transcript available for audio content"
+        },
+        "altText": {
+          "type": "boolean",
+          "default": false,
+          "description": "Alternative text available for images"
+        },
+        "fontSizeAdjustable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Font size can be adjusted"
+        },
+        "colorBlindFriendly": {
+          "type": "boolean",
+          "default": false,
+          "description": "Color-blind friendly design"
+        }
+      }
+    },
+    "QualityMetrics": {
+      "type": "object",
+      "properties": {
+        "accuracy": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Accuracy rating (0-1)"
+        },
+        "reliability": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Reliability rating (0-1)"
+        },
+        "clarity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Clarity rating (0-1)"
+        },
+        "completeness": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Completeness rating (0-1)"
+        },
+        "relevance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Relevance rating (0-1)"
+        },
+        "userRating": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Average user rating (1-5 stars)"
+        },
+        "reviewCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of user reviews"
+        },
+        "lastReviewed": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last quality review timestamp"
+        },
+        "reviewer": {
+          "type": "string",
+          "description": "Last reviewer identifier"
+        }
+      }
+    }
+  }
+}
