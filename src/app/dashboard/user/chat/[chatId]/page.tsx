@@ -13,7 +13,6 @@ import {
   History,
   ThumbsUp,
   ThumbsDown,
-  RefreshCw,
   Share2,
   Copy,
   MoreHorizontal,
@@ -40,7 +39,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { type UnifiedReport } from '@/ai/orchestration';
 import { verifyContentAndRecord } from '@/ai/flows/orchestrationFlow';
-import { doc, onSnapshot, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, arrayUnion, collection, query, orderBy, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { VerificationHistory } from '@/lib/types';
 import Link from 'next/link';
@@ -137,77 +136,52 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
   // Fetch chat history and listen for updates
   useEffect(() => {
     if (!user || !chatId) return;
-
+    setIsLoading(true);
     const chatDocRef = doc(db, 'users', user.uid, 'verificationHistory', chatId);
     const unsubscribe = onSnapshot(chatDocRef, (doc) => {
       if (doc.exists()) {
         const data = { id: doc.id, ...doc.data() } as VerificationHistory;
         setChatHistory(data);
-        // If it's a new chat with no report yet, run analysis
-        if (!data.report && data.query) {
-          handleAnalysis(data.query, true);
-        }
       } else {
         toast({ variant: 'destructive', title: 'Chat not found.' });
       }
+      setIsLoading(false);
     });
 
     return () => unsubscribe();
   }, [user, chatId]);
 
-  const handleAnalysis = async (query: string, isFirstQuery = false) => {
-    if (!query.trim() || !user) return;
-    setIsLoading(true);
-
-    try {
-      const result = await verifyContentAndRecord({
-        userId: user.uid,
-        content: query,
-        contentType: 'unknown',
-        metadata: { source: 'user_input', chatId },
-      });
-
-      // Update the document with the result and the new message
-      const chatDocRef = doc(db, 'users', user.uid, 'verificationHistory', chatId);
-      
-      const updatePayload: Partial<VerificationHistory> = {
-          report: result,
-          messages: arrayUnion({ role: 'assistant', content: result }),
-      };
-
-      // Only update title and query on the first message
-      if (isFirstQuery) {
-          const docSnap = await getDoc(chatDocRef);
-          const currentData = docSnap.data();
-          // The flow already generates and saves the title. We just update the report.
-          updatePayload.title = currentData?.title || 'Chat';
-          updatePayload.query = query;
-      }
-      
-      await updateDoc(chatDocRef, updatePayload as any);
-
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Analysis Failed',
-        description: error.message || 'Could not verify the content. Please try again.',
-      });
-       await updateDoc(doc(db, 'users', user.uid, 'verificationHistory', chatId), {
-         messages: arrayUnion({ role: 'assistant', content: { error: error.message } }),
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
   const handleSendMessage = async () => {
       if (!inputValue.trim() || !user) return;
       const message = inputValue;
       setInputValue('');
-      await updateDoc(doc(db, 'users', user.uid, 'verificationHistory', chatId), {
+      setIsLoading(true);
+      
+      const chatDocRef = doc(db, 'users', user.uid, 'verificationHistory', chatId);
+      await updateDoc(chatDocRef, {
          messages: arrayUnion({ role: 'user', content: message }),
       });
-      await handleAnalysis(message);
+
+      try {
+        await verifyContentAndRecord({
+            userId: user.uid,
+            content: message,
+            contentType: 'unknown',
+            metadata: { source: 'user_input' },
+            chatId: chatId,
+        });
+      } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Analysis Failed',
+            description: error.message || 'Could not verify the content. Please try again.',
+        });
+        await updateDoc(chatDocRef, {
+            messages: arrayUnion({ role: 'assistant', content: { error: error.message } }),
+        });
+      } finally {
+        setIsLoading(false);
+      }
   };
 
   const getVerdictBadge = (verdict: UnifiedReport['finalVerdict']) => {
@@ -219,9 +193,13 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
     }
   };
 
-  const handleShareAndReport = (result: UnifiedReport) => {
-    // ... (omitted for brevity)
-  };
+  if (!chatHistory && isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Spinner />
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>

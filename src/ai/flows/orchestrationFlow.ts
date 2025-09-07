@@ -10,9 +10,9 @@
 
 import { ai } from '@/ai/genkit';
 import { orchestrationAgent } from '@/ai/orchestration';
-import { VerificationRequest, UnifiedReport } from '@/ai/orchestration/types';
+import { UnifiedReport } from '@/ai/orchestration/types';
 import { z } from 'zod';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc, addDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -33,13 +33,14 @@ const OrchestrationFlowInputSchema = z.object({
   ]),
   metadata: z.record(z.any()).optional().describe('Associated metadata for the content.'),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional().default('medium'),
+  chatId: z.string().optional().describe('The ID of the existing chat session, if any.'),
 });
 
 export type OrchestrationFlowInput = z.infer<typeof OrchestrationFlowInputSchema>;
 
 // The output is the UnifiedReport, which doesn't need a separate Zod schema here
 // as we'll be returning the object directly and can type it.
-export type OrchestrationFlowOutput = UnifiedReport;
+export type OrchestrationFlowOutput = UnifiedReport & { chatId: string };
 
 const summarizeTitlePrompt = ai.definePrompt({
     name: 'summarizeTitlePrompt',
@@ -65,6 +66,7 @@ const orchestrationFlow = ai.defineFlow(
   },
   async (input): Promise<OrchestrationFlowOutput> => {
     const { userId, content, contentType, metadata, priority } = input;
+    let { chatId } = input;
 
     // 1. Call the orchestration agent
     const result = await orchestrationAgent.verifyContent(content, contentType, metadata, priority);
@@ -72,26 +74,38 @@ const orchestrationFlow = ai.defineFlow(
     if (!result.success || !result.report) {
       throw new Error(result.error || "Verification failed to produce a report.");
     }
-
-    // 2. Generate a title for the history
-    const title = await summarizeTitlePrompt(content);
     
-    // 3. Save the result to Firestore for the user's history
-    const historyId = uuidv4();
-    const historyRef = doc(db, 'users', userId, 'verificationHistory', historyId);
+    // 2. Handle Firestore history
+    if (chatId) {
+        // Existing chat: update the document
+        const historyRef = doc(db, 'users', userId, 'verificationHistory', chatId);
+        await setDoc(historyRef, {
+            messages: [
+                { role: 'user', content: content },
+                { role: 'assistant', content: JSON.parse(JSON.stringify(result.report)) }
+            ],
+            report: JSON.parse(JSON.stringify(result.report)),
+            timestamp: serverTimestamp(),
+        }, { merge: true });
 
-    // Add original content to metadata for the report
-    result.report.metadata.content = content;
+    } else {
+        // New chat: create a new document
+        const title = await summarizeTitlePrompt(content);
+        const historyCollectionRef = collection(db, 'users', userId, 'verificationHistory');
+        const newDocRef = await addDoc(historyCollectionRef, {
+            title: title || 'Untitled Verification',
+            query: content,
+            report: JSON.parse(JSON.stringify(result.report)),
+            timestamp: serverTimestamp(),
+            messages: [
+                { role: 'user', content: content },
+                { role: 'assistant', content: JSON.parse(JSON.stringify(result.report)) }
+            ],
+        });
+        chatId = newDocRef.id;
+    }
 
-    await setDoc(historyRef, {
-      id: historyId,
-      title: title || 'Untitled Verification',
-      query: content,
-      report: JSON.parse(JSON.stringify(result.report)), // Store a serializable version of the report
-      timestamp: serverTimestamp(),
-    });
-
-    return result.report;
+    return { ...result.report, chatId };
   }
 );
 

@@ -1,13 +1,13 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { collection, query, where, getDocs, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Report, SpotlightItem, VerificationHistory } from '@/lib/types';
+import type { SpotlightItem, VerificationHistory } from '@/lib/types';
 import {
   Plus,
   Mic,
@@ -15,7 +15,6 @@ import {
   Settings,
   BookOpen,
   History,
-  Info,
 } from 'lucide-react';
 import Spinner from '@/components/shared/Spinner';
 import { Input } from '@/components/ui/input';
@@ -34,8 +33,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import SpotlightCard from '@/components/dashboard/SpotlightCard';
 import { cn } from '@/lib/utils';
-import { type UnifiedReport } from '@/ai/orchestration';
 import { useRouter } from 'next/navigation';
+import { verifyContentAndRecord } from '@/ai/flows/orchestrationFlow';
 
 type View = 'chat' | 'learn' | 'recent';
 
@@ -164,18 +163,15 @@ export default function GeneralUserDashboard() {
     setIsLoading(true);
 
     try {
-      // Create a new chat document in Firestore to get an ID
-      const historyRef = collection(db, 'users', user.uid, 'verificationHistory');
-      const newChatDoc = await addDoc(historyRef, {
-        title: 'New Chat', // Temporary title
-        query: inputValue, // The first query
-        report: null, // No report yet
-        timestamp: serverTimestamp(),
-        messages: [{ role: 'user', content: inputValue }]
+      // Call the secure backend flow to create the chat and get the ID
+      const result = await verifyContentAndRecord({
+        userId: user.uid,
+        content: inputValue,
+        contentType: 'unknown',
       });
       
-      // Redirect to the new chat page
-      router.push(`/dashboard/user/chat/${newChatDoc.id}`);
+      // Redirect to the new chat page with the ID from the server
+      router.push(`/dashboard/user/chat/${result.chatId}`);
 
     } catch (error: any) {
       toast({
@@ -191,7 +187,7 @@ export default function GeneralUserDashboard() {
     switch (view) {
       case 'learn':
         return (
-          <div className="w-full max-w-5xl mx-auto">
+          <div className="w-full">
             <h2 className="text-3xl font-bold text-center mb-8">Knowledge Hub</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
@@ -227,8 +223,8 @@ export default function GeneralUserDashboard() {
               </div>
             </div>
 
-             <div className="w-full mt-auto mb-4 px-4 max-w-4xl mx-auto">
-                <div className="w-full mx-auto px-4 py-2 bg-[#1e1f20] rounded-full flex items-center gap-2 border border-gray-700 focus-within:ring-2 focus-within:ring-primary transition-shadow">
+             <div className="w-full mt-auto mb-4 px-4">
+                <div className="w-full max-w-4xl mx-auto px-4 py-2 bg-[#1e1f20] rounded-full flex items-center gap-2 border border-gray-700 focus-within:ring-2 focus-within:ring-primary transition-shadow">
                     <Button variant="ghost" size="icon" className="text-gray-400 hover:bg-gray-700 rounded-full">
                         <Plus />
                     </Button>
@@ -265,12 +261,12 @@ export default function GeneralUserDashboard() {
   return (
     <SidebarProvider>
       <DashboardViewContext.Provider value={{ view, setView }}>
-        <div className="flex h-screen bg-[#131314] text-gray-200">
+        <div className="flex min-h-screen bg-[#131314] text-gray-200">
           <Sidebar>
             <DashboardSidebarContent />
           </Sidebar>
 
-          <main className="flex-1 flex flex-col h-screen">
+          <main className="flex-1 flex flex-col">
             <div className="flex-1 p-6 overflow-y-auto flex">
               {renderMainContent()}
             </div>
