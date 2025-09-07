@@ -1,26 +1,52 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Mic, ArrowUp } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import Spinner from '@/components/shared/Spinner';
 
 export default function LandingPage() {
   const [inputValue, setInputValue] = useState('');
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && user) {
+      const dashboardRoutes: { [key: string]: string } = {
+        'civic': '/dashboard/user',
+        'sentinel': '/dashboard/sentinel',
+        'ground-sentinel': '/dashboard/ground-sentinel',
+        'council': '/dashboard/council',
+        'state-officer': '/dashboard/state-officer',
+        'govt-admin': '/dashboard/govt-admin',
+      };
+      const targetRoute = dashboardRoutes[user.role] || '/dashboard/user';
+      router.replace(targetRoute);
+    }
+  }, [user, loading, router]);
+
 
   const handleGoClick = () => {
+    // If user is logged in, this component will redirect, but this is a fallback.
+    // If not logged in, it will go to the login page.
     if (user) {
       router.push(`/report/new?contentType=text&contentData=${encodeURIComponent(inputValue)}`);
     } else {
       router.push('/login');
     }
   };
+
+  if (loading || (!loading && user)) {
+    return (
+       <div className="flex h-[calc(100vh-56px)] items-center justify-center">
+        <Spinner />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-57px)] bg-[#131314] text-gray-200 font-sans">
