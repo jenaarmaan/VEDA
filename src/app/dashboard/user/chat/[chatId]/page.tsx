@@ -39,7 +39,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { type VerificationReport } from '@/lib/types';
 import { verifyContentAndRecord } from '@/ai/flows/orchestrationFlow';
-import { doc, onSnapshot, updateDoc, arrayUnion, collection, query, orderBy, getDoc, serverTimestamp, addDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, arrayUnion, collection, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { VerificationHistory } from '@/lib/types';
 import Link from 'next/link';
@@ -103,10 +103,10 @@ function DashboardSidebarContent() {
         <SidebarContent className="p-2">
           <SidebarMenu>
             <SidebarMenuItem>
-               <SidebarMenuButton asChild tooltip="New Verification">
+               <SidebarMenuButton asChild tooltip="New Chat">
                   <Link href="/dashboard/user" className="w-full justify-start text-base h-12">
                       <Plus className="h-5 w-5" />
-                      <span className={cn(state === "collapsed" && "hidden")}>New Verification</span>
+                      <span className={cn(state === "collapsed" && "hidden", "whitespace-nowrap")}>New Chat</span>
                   </Link>
                </SidebarMenuButton>
             </SidebarMenuItem>
@@ -165,13 +165,6 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
       if (doc.exists()) {
         const data = { id: doc.id, ...doc.data() } as VerificationHistory;
         setChatHistory(data);
-
-        // If this is the first time loading this chat, and there is only one message (the user's),
-        // then trigger the AI analysis automatically.
-        if (data.messages.length === 1 && data.messages[0].role === 'user') {
-          handleSendMessage(data.messages[0].content as string, true);
-        }
-
       } else {
         toast({ variant: 'destructive', title: 'Chat not found.' });
         router.push('/dashboard/user');
@@ -186,15 +179,12 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
     return () => unsubscribe();
   }, [user, chatId, router, toast]);
 
-  const handleSendMessage = async (content: string, isInitialMessage = false) => {
+  const handleSendMessage = async (content: string) => {
       if (!content.trim() || !user) return;
       
       setIsLoading(true);
+      setInputValue('');
       
-      if (!isInitialMessage) {
-        setInputValue('');
-      }
-
       try {
         await verifyContentAndRecord({
             userId: user.uid,

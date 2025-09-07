@@ -34,6 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import SpotlightCard from '@/components/dashboard/SpotlightCard';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { verifyContentAndRecord } from '@/ai/flows/orchestrationFlow';
 
 type View = 'chat' | 'learn' | 'recent';
 
@@ -108,10 +109,10 @@ function DashboardSidebarContent() {
       <SidebarContent className="p-2">
         <SidebarMenu>
           <SidebarMenuItem>
-             <SidebarMenuButton asChild tooltip="New Verification">
+             <SidebarMenuButton asChild tooltip="New Chat">
                 <Link href="/dashboard/user" className="w-full justify-start text-base h-12">
                     <Plus className="h-5 w-5" />
-                    <span className={cn(state === "collapsed" && "hidden")}>New Verification</span>
+                    <span className={cn(state === "collapsed" && "hidden", "whitespace-nowrap")}>New Chat</span>
                 </Link>
              </SidebarMenuButton>
           </SidebarMenuItem>
@@ -163,24 +164,13 @@ export default function GeneralUserDashboard() {
     setIsLoading(true);
     
     try {
-      const historyCollectionRef = collection(db, 'users', user.uid, 'verificationHistory');
-      
-      const firstMessage: ChatMessage = {
-        role: 'user',
+      const { chatId } = await verifyContentAndRecord({
+        userId: user.uid,
         content: inputValue,
-      };
-
-      // Create doc with a fast placeholder title. The AI will update it later.
-      const newDocRef = await addDoc(historyCollectionRef, {
-        title: "New Query...", 
-        query: inputValue,
-        report: null,
-        timestamp: serverTimestamp(),
-        messages: [firstMessage],
+        contentType: 'unknown', 
       });
 
-      // Redirect immediately to the new chat page.
-      router.push(`/dashboard/user/chat/${newDocRef.id}`);
+      router.push(`/dashboard/user/chat/${chatId}`);
 
     } catch (error: any) {
       toast({
