@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -43,8 +44,17 @@ const ChartContainer = React.forwardRef<
     >["children"]
   }
 >(({ id, className, children, config, ...props }, ref) => {
-  const uniqueId = React.useId()
-  const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`
+  const [uniqueId, setUniqueId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    setUniqueId(`chart-${Math.random().toString(36).substring(2, 9)}`);
+  }, []);
+
+  const chartId = id || uniqueId;
+  
+  if (!chartId) {
+    return null; // Or a loading skeleton
+  }
 
   return (
     <ChartContext.Provider value={{ config }}>

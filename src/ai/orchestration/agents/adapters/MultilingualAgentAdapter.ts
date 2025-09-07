@@ -20,7 +20,8 @@ export class MultilingualAgentAdapter implements SpecializedAgent {
     'news_article',
     'social_media_post',
     'image_with_text',
-    'multimedia_content'
+    'multimedia_content',
+    'unknown'
   ];
   readonly maxProcessingTime = 12000; // 12 seconds
 

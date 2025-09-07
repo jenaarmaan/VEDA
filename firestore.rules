@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -20,6 +21,12 @@ service cloud.firestore {
       allow read: if request.auth.uid == userId || getUserRole(request.auth.uid) == 'govt_admin';
       allow create; // Allow user creation during signup
       allow update, delete: if getUserRole(request.auth.uid) == 'govt_admin';
+
+      // ADDED: Rule for verificationHistory subcollection
+      // Allow users to manage their own chat history.
+      match /verificationHistory/{historyId} {
+        allow read, write, create, delete: if request.auth.uid == userId;
+      }
     }
 
     // Reports collection
@@ -63,6 +70,13 @@ service cloud.firestore {
     match /audit_logs/{logId} {
       allow read: if getUserRole(request.auth.uid) == 'govt_admin';
       allow write: if false; // Should be written from a trusted server environment
+    }
+
+    // ADDED: Rule for contacts collection
+    // Allow any authenticated user to create a contact message.
+    match /contacts/{contactId} {
+        allow create: if request.auth.uid != null;
+        allow read, update, delete: if getUserRole(request.auth.uid) == 'govt_admin'; // Only admins can manage
     }
   }
 }

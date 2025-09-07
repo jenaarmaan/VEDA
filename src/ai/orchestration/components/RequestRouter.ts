@@ -10,6 +10,44 @@ import {
   Priority 
 } from '../types';
 import { agentRegistry } from '../agents';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
+
+// Define the schema for the content classification prompt
+const ClassifyContentInputSchema = z.object({
+  content: z.string().describe('The user-provided text content to classify.'),
+});
+
+const ClassifyContentOutputSchema = z.object({
+  contentType: z.enum([
+    'news_article',
+    'social_media_post',
+    'video_content',
+    'image_with_text',
+    'academic_paper',
+    'government_document',
+    'educational_content',
+    'multimedia_content',
+    'unknown',
+  ]).describe('The most likely content type based on the input text.'),
+  justification: z.string().describe('A brief justification for the chosen content type.'),
+});
+
+// Define the Genkit prompt for content classification
+const classifyContentPrompt = ai.definePrompt({
+    name: 'classifyContentPrompt',
+    input: { schema: ClassifyContentInputSchema },
+    output: { schema: ClassifyContentOutputSchema },
+    prompt: `Analyze the following text and classify its content type.
+The primary goal is to determine if it resembles a news article, a social media post, educational material, or other specific formats.
+If the type is ambiguous, classify it as 'unknown'.
+
+Content to classify:
+"{{{content}}}"
+
+Provide the output in the specified JSON format.`,
+});
+
 
 export interface RoutingDecision {
   selectedAgents: string[];
@@ -79,7 +117,10 @@ export class RequestRouter {
 
     this.contentTypeRules.set('unknown', [
       'content-analysis',
-      'source-forensics'
+      'source-forensics',
+      'multilingual',
+      'social-graph',
+      'educational-content'
     ]);
 
     // Priority multipliers for execution time estimation
@@ -88,16 +129,35 @@ export class RequestRouter {
     this.priorityMultipliers.set('high', 0.6);
     this.priorityMultipliers.set('critical', 0.4);
   }
+  
+  /**
+   * Intelligently determine the content type from the request content.
+   * If the content type is 'unknown', it uses an AI prompt to classify it.
+   */
+  private async determineContentType(request: VerificationRequest): Promise<ContentType> {
+    if (request.contentType !== 'unknown') {
+      return request.contentType;
+    }
+
+    try {
+      const classification = await classifyContentPrompt({ content: request.content });
+      return classification?.contentType || 'unknown';
+    } catch (error) {
+      console.error("Content classification failed, defaulting to 'unknown'.", error);
+      return 'unknown';
+    }
+  }
+
 
   /**
    * Route a verification request to appropriate agents
    */
   async routeRequest(request: VerificationRequest): Promise<RoutingDecision> {
-    const contentType = request.contentType;
+    const determinedContentType = await this.determineContentType(request);
     const metadata = request.metadata;
     
-    // Get base agent list for content type
-    const baseAgents = this.contentTypeRules.get(contentType) || 
+    // Get base agent list for the determined content type
+    const baseAgents = this.contentTypeRules.get(determinedContentType) || 
                       this.contentTypeRules.get('unknown')!;
 
     // Filter agents based on availability and content requirements
@@ -106,7 +166,7 @@ export class RequestRouter {
     // Apply content-specific routing logic
     const selectedAgents = await this.applyContentSpecificRouting(
       availableAgents, 
-      request
+      { ...request, contentType: determinedContentType } // Use the determined type
     );
 
     // Determine execution order based on dependencies and priority
@@ -117,7 +177,7 @@ export class RequestRouter {
 
     // Generate reasoning for the routing decision
     const reasoning = this.generateRoutingReasoning(
-      contentType, 
+      determinedContentType, 
       selectedAgents, 
       executionOrder,
       metadata
@@ -159,7 +219,7 @@ export class RequestRouter {
     }
 
     // Add social graph agent for social media content
-    if (metadata.platform && ['twitter', 'facebook', 'instagram', 'tiktok'].includes(metadata.platform)) {
+    if (request.contentType === 'social_media_post' || (metadata.platform && ['twitter', 'facebook', 'instagram', 'tiktok'].includes(metadata.platform))) {
       if (!selectedAgents.includes('social-graph')) {
         selectedAgents.push('social-graph');
       }
@@ -179,7 +239,7 @@ export class RequestRouter {
       return agent && agent.supportedContentTypes.includes(request.contentType);
     });
 
-    return supportedAgents;
+    return [...new Set(supportedAgents)]; // Return unique agent IDs
   }
 
   private determineExecutionOrder(agentIds: string[], request: VerificationRequest): string[] {
@@ -246,7 +306,7 @@ export class RequestRouter {
   ): string {
     const reasons: string[] = [];
 
-    reasons.push(`Content type '${contentType}' requires specialized analysis`);
+    reasons.push(`Content type determined as '${contentType}', requiring specialized analysis`);
     
     if (metadata.language && metadata.language !== 'en') {
       reasons.push(`Non-English content (${metadata.language}) requires multilingual analysis`);
