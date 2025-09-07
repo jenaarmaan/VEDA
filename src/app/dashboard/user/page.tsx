@@ -264,7 +264,7 @@ export default function GeneralUserDashboard() {
       case 'chat':
       default:
         return (
-          <div className="w-full max-w-4xl mx-auto flex flex-col items-center flex-1 h-full">
+          <div className="w-full flex flex-col items-center flex-1">
             <div className="flex-grow w-full flex flex-col items-center justify-center">
               {!analysisResult && (
                 <div className="text-center">
@@ -275,7 +275,7 @@ export default function GeneralUserDashboard() {
                 </div>
               )}
               {analysisResult && (
-                <div className="w-full mb-8 space-y-4">
+                <div className="w-full max-w-4xl mb-8 space-y-4">
                    <Card className="bg-card/80">
                       <CardHeader className="flex flex-row justify-between items-center">
                           <CardTitle>Verification Result</CardTitle>
@@ -306,7 +306,7 @@ export default function GeneralUserDashboard() {
               )}
             </div>
 
-             <div className="w-full mt-auto mb-4">
+             <div className="w-full mt-auto mb-4 px-4">
                 <div className="w-full max-w-4xl mx-auto px-4 py-2 bg-[#1e1f20] rounded-full flex items-center gap-2 border border-gray-700 focus-within:ring-2 focus-within:ring-primary transition-shadow">
                     <Button variant="ghost" size="icon" className="text-gray-400 hover:bg-gray-700 rounded-full">
                         <Plus />
@@ -331,7 +331,7 @@ export default function GeneralUserDashboard() {
                 </p>
              </div>
              { !analysisResult && 
-                <div className="w-full max-w-5xl mx-auto mt-8">
+                <div className="w-full mt-8">
                     <h2 className="text-2xl font-bold text-center mb-6">Spotlight</h2>
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {spotlightNews.map((item, index) => <SpotlightCard key={index} item={item} />)}
