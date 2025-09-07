@@ -104,9 +104,9 @@ function DashboardSidebarContent() {
           <SidebarMenu>
             <SidebarMenuItem>
                <SidebarMenuButton asChild tooltip="New Chat">
-                  <Link href="/dashboard/user" className="w-full justify-start text-base h-12">
+                  <Link href="/dashboard/user" className="h-12 text-base">
                       <Plus className="h-5 w-5" />
-                      <span className={cn(state === "collapsed" && "hidden", "whitespace-nowrap")}>New Chat</span>
+                      New Chat
                   </Link>
                </SidebarMenuButton>
             </SidebarMenuItem>
