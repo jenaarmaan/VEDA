@@ -163,12 +163,16 @@ export default function GeneralUserDashboard() {
     setIsLoading(true);
 
     try {
-      // Call the secure backend flow to create the chat and get the ID
+      // The backend flow now creates the chat document and returns the ID.
       const result = await verifyContentAndRecord({
         userId: user.uid,
         content: inputValue,
-        contentType: 'unknown',
+        contentType: 'unknown', // This is fine, as the flow will handle it
       });
+      
+      if (!result.chatId) {
+        throw new Error("Failed to get a chat ID from the server.");
+      }
       
       // Redirect to the new chat page with the ID from the server
       router.push(`/dashboard/user/chat/${result.chatId}`);
@@ -177,7 +181,7 @@ export default function GeneralUserDashboard() {
       toast({
         variant: 'destructive',
         title: 'Failed to Start Chat',
-        description: error.message || 'Could not create a new verification session.',
+        description: error.message || 'Could not create a new verification session. Please try again.',
       });
       setIsLoading(false);
     }
