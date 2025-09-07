@@ -95,11 +95,17 @@ export interface SpotlightItem {
   verdict: 'True' | 'Fake';
 }
 
+export interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string | UnifiedReport | { error: string };
+}
+
 export interface VerificationHistory {
     id: string;
     title: string;
     query: string;
-    report: UnifiedReport;
+    report: UnifiedReport | null;
     timestamp: FieldValue;
+    messages: ChatMessage[];
 }
     
