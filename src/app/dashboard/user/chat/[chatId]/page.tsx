@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useRef, createContext, useContext } from 'react';
+import React, { useEffect, useState, useRef, createContext, useContext, use } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -141,7 +141,7 @@ function DashboardSidebarContent() {
 
 
 export default function ChatPage({ params }: { params: { chatId: string } }) {
-  const { chatId } = params;
+  const { chatId } = use(params);
   const { user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
