@@ -1,5 +1,6 @@
 
 
+import { UnifiedReport } from "@/ai/orchestration";
 import { FieldValue, Timestamp } from "firebase/firestore";
 
 export type UserRole = 'civic' | 'sentinel' | 'ground_sentinel' | 'council' | 'state_officer' | 'govt_admin';
@@ -94,4 +95,11 @@ export interface SpotlightItem {
   verdict: 'True' | 'Fake';
 }
 
+export interface VerificationHistory {
+    id: string;
+    title: string;
+    query: string;
+    report: UnifiedReport;
+    timestamp: FieldValue;
+}
     

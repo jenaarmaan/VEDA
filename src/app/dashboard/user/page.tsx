@@ -1,13 +1,13 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, 'use, useEffect, useState'
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Report, SpotlightItem } from '@/lib/types';
+import type { Report, SpotlightItem, VerificationHistory } from '@/lib/types';
 import {
   Plus,
   Mic,
@@ -41,60 +41,56 @@ import {
 } from '@/components/ui/sidebar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { analyzeContent, AnalyzeContentInput, AnalyzeContentOutput } from '@/ai/flows/analyzeContentFlow';
 import { useToast } from '@/hooks/use-toast';
 import SpotlightCard from '@/components/dashboard/SpotlightCard';
 import { cn } from '@/lib/utils';
+import { type UnifiedReport } from '@/ai/orchestration';
+import { verifyContentAndRecord } from '@/ai/flows/orchestrationFlow';
 
 type View = 'chat' | 'learn' | 'recent';
 
 function RecentItemsList() {
   const { user } = useAuth();
-  const [reports, setReports] = useState<Report[]>([]);
+  const [history, setHistory] = useState<VerificationHistory[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchReports() {
-      if (!user) {
-        setLoading(false);
-        return;
-      };
-      setLoading(true);
-      try {
-        const reportsRef = collection(db, 'reports');
-        const q = query(
-          reportsRef,
-          where('submittedBy', '==', user.uid),
-          orderBy('createdAt', 'desc')
-        );
-        const querySnapshot = await getDocs(q);
-        const userReports = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        } as Report));
-        setReports(userReports);
-      } catch (error) {
-        console.error('Error fetching reports: ', error);
-      } finally {
-        setLoading(false);
-      }
+    if (!user) {
+      setLoading(false);
+      return;
     }
-    fetchReports();
+
+    const historyRef = collection(db, 'users', user.uid, 'verificationHistory');
+    const q = query(historyRef, orderBy('timestamp', 'desc'));
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const userHistory = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      } as VerificationHistory));
+      setHistory(userHistory);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching history: ', error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [user]);
 
   if (loading) {
     return <div className="p-4 text-center"><Spinner /></div>;
   }
   
-  if (reports.length === 0) {
+  if (history.length === 0) {
     return <p className="p-4 text-xs text-muted-foreground text-center">No recent activity.</p>
   }
 
   return (
     <div className="px-2 space-y-1">
-      {reports.map(report => (
-         <div key={report.id} className="text-sm p-2 rounded-md hover:bg-sidebar-accent truncate text-muted-foreground cursor-pointer">
-           {report.contentData}
+      {history.map(item => (
+         <div key={item.id} className="text-sm p-2 rounded-md hover:bg-sidebar-accent truncate text-muted-foreground cursor-pointer">
+           {item.title}
          </div>
       ))}
     </div>
@@ -123,13 +119,13 @@ function DashboardSidebarContent() {
           <SidebarMenuItem>
             <SidebarMenuButton onClick={() => setView('learn')} isActive={view === 'learn'}>
               <BookOpen />
-              Learn
+               <span className={cn(state === "collapsed" && "hidden")}>Learn</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem className="flex flex-col items-start">
              <SidebarMenuButton onClick={() => setShowRecent(!showRecent)} isActive={view === 'recent'} className="w-full">
               <History />
-              Recent
+              <span className={cn(state === "collapsed" && "hidden")}>Recent</span>
             </SidebarMenuButton>
             {state === 'expanded' && showRecent && <RecentItemsList />}
           </SidebarMenuItem>
@@ -140,7 +136,7 @@ function DashboardSidebarContent() {
           <SidebarMenuItem>
             <SidebarMenuButton>
               <Settings />
-              Settings
+               <span className={cn(state === "collapsed" && "hidden")}>Settings</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -160,11 +156,12 @@ function useDashboardView() {
 }
 
 export default function GeneralUserDashboard() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [view, setView] = useState<View>('chat');
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<AnalyzeContentOutput | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<UnifiedReport | null>(null);
   const [spotlightNews, setSpotlightNews] = useState<SpotlightItem[]>([
     { type: 'real', title: 'Scientists Discover Breakthrough in Renewable Energy', summary: 'A new solar panel technology promises to double efficiency rates...', source: 'Science Today', verdict: 'True' },
     { type: 'fake', title: 'Warning: Viral Video Falsely Claims New Tax Law', summary: 'A widely circulated video is using deceptive edits to spread misinformation...', source: 'Internal Alert', verdict: 'Fake' },
@@ -172,48 +169,51 @@ export default function GeneralUserDashboard() {
   ]);
 
   const handleAnalysis = async () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || !user) return;
     setIsLoading(true);
     setAnalysisResult(null);
 
-    const input: AnalyzeContentInput = {
-      contentType: 'text',
-      contentData: inputValue,
-    };
+    const originalQuery = inputValue;
+    setInputValue('');
 
     try {
-      const result = await analyzeContent(input);
+      const result = await verifyContentAndRecord({ 
+        userId: user.uid,
+        content: originalQuery,
+        contentType: 'text',
+        metadata: { source: 'user_input' },
+        priority: 'medium'
+      });
       setAnalysisResult(result);
-      setInputValue('');
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Analysis Failed',
-        description: 'Could not verify the content. Please try again.',
+        description: error.message || 'Could not verify the content. Please try again.',
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleShareAndReport = (result: AnalyzeContentOutput) => {
-    const subject = `Fake News Report: Claim regarding "${result.justification.substring(0, 50)}..."`;
+  const handleShareAndReport = (result: UnifiedReport) => {
+    const subject = `Fake News Report: Claim regarding "${result.summary.substring(0, 50)}..."`;
     const body = `
       Dear VEDA Authorities,
 
       I am reporting the following piece of information flagged as 'Fake' by the VEDA system.
 
       Original Content:
-      "${inputValue}"
+      "${result.metadata.content}"
 
-      AI Analysis Verdict: ${result.verdict}
-      Confidence: ${result.confidenceScore}%
+      AI Analysis Verdict: ${result.finalVerdict}
+      Confidence: ${result.confidence}%
 
       Justification Provided:
-      ${result.justification}
+      ${result.summary}
 
       Cited Sources:
-      ${result.sources.join('\n')}
+      ${result.evidence.map(e => e.url).join('\n')}
 
       Please investigate this matter further.
 
@@ -224,12 +224,15 @@ export default function GeneralUserDashboard() {
     window.location.href = mailtoLink;
   };
   
-  const getVerdictBadge = (verdict: AnalyzeContentOutput['verdict']) => {
+  const getVerdictBadge = (verdict: UnifiedReport['finalVerdict']) => {
     switch(verdict) {
-      case 'True': return <Badge variant="default" className="bg-green-600 hover:bg-green-700"><CheckCircle className="mr-2 h-4 w-4" />True</Badge>;
-      case 'Fake': return <Badge variant="destructive"><XCircle className="mr-2 h-4 w-4" />Fake</Badge>;
-      case 'Unverifiable': return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-black"><AlertTriangle className="mr-2 h-4 w-4" />Suspicious</Badge>;
-      default: return <Badge variant="outline">Unknown</Badge>;
+      case 'verified_true': return <Badge variant="default" className="bg-green-600 hover:bg-green-700"><CheckCircle className="mr-2 h-4 w-4" />True</Badge>;
+      case 'verified_false': return <Badge variant="destructive"><XCircle className="mr-2 h-4 w-4" />Fake</Badge>;
+      case 'misleading': return <Badge variant="destructive" className="bg-orange-500 hover:bg-orange-600"><AlertTriangle className="mr-2 h-4 w-4" />Misleading</Badge>;
+      case 'unverified':
+      case 'insufficient_evidence': 
+      default:
+        return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-black"><AlertTriangle className="mr-2 h-4 w-4" />Suspicious</Badge>;
     }
   };
 
@@ -264,9 +267,9 @@ export default function GeneralUserDashboard() {
       case 'chat':
       default:
         return (
-          <div className="w-full flex flex-col items-center flex-1">
+          <div className="w-full flex flex-col items-center flex-1 h-full">
             <div className="flex-grow w-full flex flex-col items-center justify-center">
-              {!analysisResult && (
+              {!analysisResult && !isLoading && (
                 <div className="text-center">
                   <h1 className="text-5xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-4">
                     Namaste, Welcome to VEDA
@@ -274,29 +277,37 @@ export default function GeneralUserDashboard() {
                   <p className="text-lg text-muted-foreground">Your personal assistant for verified information</p>
                 </div>
               )}
+              {isLoading && <Spinner />}
               {analysisResult && (
                 <div className="w-full max-w-4xl mb-8 space-y-4">
                    <Card className="bg-card/80">
                       <CardHeader className="flex flex-row justify-between items-center">
                           <CardTitle>Verification Result</CardTitle>
-                          {getVerdictBadge(analysisResult.verdict)}
+                          {getVerdictBadge(analysisResult.finalVerdict)}
                       </CardHeader>
                       <CardContent className="space-y-4">
                           <div>
                               <h3 className="font-semibold mb-1">Explanation</h3>
-                              <p className="text-sm text-muted-foreground">{analysisResult.justification}</p>
+                              <p className="text-sm text-muted-foreground">{analysisResult.summary}</p>
                           </div>
                            <div>
                               <h3 className="font-semibold mb-1">Sources</h3>
                               <ul className="list-disc pl-5 text-sm">
-                                  {analysisResult.sources.map((src, i) => <li key={i}><a href={src} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{src}</a></li>)}
+                                  {analysisResult.evidence.map((src, i) => (
+                                    <li key={i}>
+                                      <a href={src.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                        {src.title}
+                                      </a>
+                                      <span className="text-muted-foreground text-xs ml-2">(Reliability: {Math.round(src.reliability * 100)}%)</span>
+                                    </li>
+                                  ))}
                               </ul>
                           </div>
                           <div className="flex items-center gap-2 pt-4 border-t border-border">
                              <Button variant="ghost" size="icon"><ThumbsUp className="h-4 w-4" /></Button>
                              <Button variant="ghost" size="icon"><ThumbsDown className="h-4 w-4" /></Button>
                              <Button variant="ghost" size="icon"><RefreshCw className="h-4 w-4" /></Button>
-                             <Button variant="ghost" size="icon" onClick={() => analysisResult.verdict === 'Fake' && handleShareAndReport(analysisResult)}><Share2 className="h-4 w-4" /></Button>
+                             <Button variant="ghost" size="icon" onClick={() => analysisResult.finalVerdict === 'verified_false' && handleShareAndReport(analysisResult)}><Share2 className="h-4 w-4" /></Button>
                              <Button variant="ghost" size="icon"><Copy className="h-4 w-4" /></Button>
                              <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                           </div>
@@ -330,7 +341,7 @@ export default function GeneralUserDashboard() {
                     VEDA may display inaccurate info. Always verify important information.
                 </p>
              </div>
-             { !analysisResult && 
+             { !analysisResult && !isLoading && 
                 <div className="w-full mt-8">
                     <h2 className="text-2xl font-bold text-center mb-6">Spotlight</h2>
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -346,12 +357,12 @@ export default function GeneralUserDashboard() {
   return (
     <SidebarProvider>
       <DashboardViewContext.Provider value={{ view, setView }}>
-        <div className="flex h-screen bg-[#131314] text-gray-200 overflow-hidden">
+        <div className="flex h-screen bg-[#131314] text-gray-200">
           <Sidebar>
             <DashboardSidebarContent />
           </Sidebar>
 
-          <main className="flex-1 flex flex-col">
+          <main className="flex-1 flex flex-col h-screen">
             <div className="flex-1 p-6 overflow-y-auto">
               {renderMainContent()}
             </div>
