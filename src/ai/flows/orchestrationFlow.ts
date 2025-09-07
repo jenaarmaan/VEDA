@@ -64,9 +64,9 @@ const placeholderVerificationPrompt = ai.definePrompt({
 
 "{{{input}}}"
 
-Acknowledge the user's query. State that the full analysis agent is currently being integrated and will be available soon. For now, provide a placeholder response.
+Acknowledge the user's query. State that the full analysis agent is currently being integrated and will be available soon. For now, provide a placeholder response with a verdict of 'Unverifiable'.
 
-Produce the output in the required JSON format with a verdict of 'Unverifiable' and a placeholder explanation.
+Produce the output in the required JSON format.
 `,
 });
 
@@ -78,40 +78,34 @@ const orchestrationFlow = ai.defineFlow(
     outputSchema: z.any(),
   },
   async (input): Promise<OrchestrationFlowOutput> => {
-    const { userId, content } = input;
-    let { chatId } = input;
+    const { userId, content, chatId } = input;
 
-    // 1. If no chatId is provided, create a new chat history document first.
     if (!chatId) {
+        throw new Error("A chatId must be provided to this flow.");
+    }
+    
+    // 1. Add user message to existing chat
+    const historyRef = doc(db, 'users', userId, 'verificationHistory', chatId);
+    await updateDoc(historyRef, {
+        messages: arrayUnion({ role: 'user', content: content }),
+    });
+
+    // 2. If it's the first user message, generate and update the title
+    const chatDoc = await getDoc(historyRef);
+    const chatData = chatDoc.data();
+    if (chatData?.messages.length === 1) { // Check if this is the first real message
         const titleResult = await summarizeTitlePrompt(content);
         const title = titleResult || 'Untitled Verification';
-        const historyCollectionRef = collection(db, 'users', userId, 'verificationHistory');
-        const newDocRef = await addDoc(historyCollectionRef, {
-            title: title,
-            query: content,
-            report: null, // Start with no report
-            timestamp: serverTimestamp(),
-            messages: [
-                { role: 'user', content: content }
-            ],
-        });
-        chatId = newDocRef.id;
-    } else {
-        // If it's an existing chat, just add the user message
-        const historyRef = doc(db, 'users', userId, 'verificationHistory', chatId);
-        await updateDoc(historyRef, {
-            messages: arrayUnion({ role: 'user', content: content }),
-        });
+        await updateDoc(historyRef, { title: title });
     }
 
-    // 2. Call the placeholder verification AI
+    // 3. Call the placeholder verification AI
     const result = await placeholderVerificationPrompt(content);
     if (!result) {
         throw new Error("Verification failed to produce a report.");
     }
     
-    // 3. Save the AI's response to the chat history
-    const historyRef = doc(db, 'users', userId, 'verificationHistory', chatId);
+    // 4. Save the AI's response to the chat history
     await updateDoc(historyRef, {
         report: JSON.parse(JSON.stringify(result)), // Save the latest report
         messages: arrayUnion({ role: 'assistant', content: JSON.parse(JSON.stringify(result)) }),

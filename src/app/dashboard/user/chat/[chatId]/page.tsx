@@ -143,6 +143,13 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
       if (doc.exists()) {
         const data = { id: doc.id, ...doc.data() } as VerificationHistory;
         setChatHistory(data);
+
+        // If this is the first time loading this chat, and there is only one message (the user's),
+        // then trigger the AI analysis automatically.
+        if (data.messages.length === 1 && data.messages[0].role === 'user') {
+          handleSendMessage(data.messages[0].content as string, true);
+        }
+
       } else {
         toast({ variant: 'destructive', title: 'Chat not found.' });
       }
@@ -150,18 +157,21 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
     });
 
     return () => unsubscribe();
-  }, [user, chatId, toast]);
+  }, [user, chatId]);
 
-  const handleSendMessage = async () => {
-      if (!inputValue.trim() || !user) return;
-      const message = inputValue;
-      setInputValue('');
+  const handleSendMessage = async (content: string, isInitialMessage = false) => {
+      if (!content.trim() || !user) return;
+      
       setIsLoading(true);
+      
+      if (!isInitialMessage) {
+        setInputValue('');
+      }
 
       try {
         await verifyContentAndRecord({
             userId: user.uid,
-            content: message,
+            content: content,
             contentType: 'unknown',
             metadata: { source: 'user_input' },
             chatId: chatId,
@@ -273,13 +283,13 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
                         className="flex-1 bg-transparent border-none text-lg text-gray-200 placeholder-gray-500 focus:ring-0 focus:outline-none"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(inputValue)}
                         disabled={isLoading}
                     />
                     <Button variant="ghost" size="icon" className="text-gray-400 hover:bg-gray-700 rounded-full">
                         <Mic />
                     </Button>
-                    <Button size="icon" className="bg-gray-700 hover:bg-gray-600 rounded-full" onClick={handleSendMessage} disabled={isLoading || !inputValue.trim()}>
+                    <Button size="icon" className="bg-gray-700 hover:bg-gray-600 rounded-full" onClick={() => handleSendMessage(inputValue)} disabled={isLoading || !inputValue.trim()}>
                         {isLoading ? <Spinner /> : <ArrowUp />}
                     </Button>
                 </div>

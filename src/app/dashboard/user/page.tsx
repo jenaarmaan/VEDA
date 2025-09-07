@@ -5,9 +5,9 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { SpotlightItem, VerificationHistory } from '@/lib/types';
+import type { SpotlightItem, VerificationHistory, ChatMessage } from '@/lib/types';
 import {
   Plus,
   Mic,
@@ -34,7 +34,6 @@ import { useToast } from '@/hooks/use-toast';
 import SpotlightCard from '@/components/dashboard/SpotlightCard';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { verifyContentAndRecord } from '@/ai/flows/orchestrationFlow';
 
 type View = 'chat' | 'learn' | 'recent';
 
@@ -161,30 +160,37 @@ export default function GeneralUserDashboard() {
   const handleNewChat = async () => {
     if (!inputValue.trim() || !user) return;
     setIsLoading(true);
+    const tempInputValue = inputValue;
+    setInputValue('');
 
     try {
-      // The backend flow now creates the chat document and returns the ID.
-      const result = await verifyContentAndRecord({
-        userId: user.uid,
-        content: inputValue,
-        contentType: 'unknown', // This is fine, as the flow will handle it
+      const historyCollectionRef = collection(db, 'users', user.uid, 'verificationHistory');
+      
+      const firstMessage: ChatMessage = {
+        role: 'user',
+        content: tempInputValue,
+      };
+
+      const newDocRef = await addDoc(historyCollectionRef, {
+        title: "New Query", // Placeholder title
+        query: tempInputValue,
+        report: null,
+        timestamp: serverTimestamp(),
+        messages: [firstMessage],
       });
-      
-      if (!result.chatId) {
-        throw new Error("Failed to get a chat ID from the server.");
-      }
-      
-      // Redirect to the new chat page with the ID from the server
-      router.push(`/dashboard/user/chat/${result.chatId}`);
+
+      // Redirect to the newly created chat page.
+      router.push(`/dashboard/user/chat/${newDocRef.id}`);
 
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Failed to Start Chat',
-        description: error.message || 'Could not create a new verification session. Please try again.',
+        description: error.message || 'Could not create a new verification session. Please check your connection and permissions.',
       });
       setIsLoading(false);
-    }
+    } 
+    // No finally block to set isLoading false, because we are redirecting away.
   };
 
   const renderMainContent = () => {
