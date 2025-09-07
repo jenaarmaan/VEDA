@@ -213,7 +213,7 @@ export default function GeneralUserDashboard() {
       case 'chat':
       default:
         return (
-          <div className="w-full flex flex-col items-center flex-1 h-full">
+          <div className="w-full flex flex-col items-center h-full">
             <div className="flex-grow w-full flex flex-col items-center justify-center">
               <div className="text-center">
                 <h1 className="text-5xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-4">
@@ -261,13 +261,13 @@ export default function GeneralUserDashboard() {
   return (
     <SidebarProvider>
       <DashboardViewContext.Provider value={{ view, setView }}>
-        <div className="flex min-h-screen bg-[#131314] text-gray-200">
+        <div className="flex h-screen bg-[#131314] text-gray-200">
           <Sidebar>
             <DashboardSidebarContent />
           </Sidebar>
 
-          <main className="flex-1 flex flex-col">
-            <div className="flex-1 p-6 overflow-y-auto flex">
+          <main className="flex-1 flex flex-col overflow-y-auto">
+            <div className="flex-1 p-6 flex">
               {renderMainContent()}
             </div>
           </main>

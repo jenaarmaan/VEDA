@@ -37,7 +37,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { type UnifiedReport } from '@/ai/orchestration';
+import { type VerificationReport } from '@/lib/types';
 import { verifyContentAndRecord } from '@/ai/flows/orchestrationFlow';
 import { doc, onSnapshot, updateDoc, arrayUnion, collection, query, orderBy, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -126,6 +126,7 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
   const { toast } = useToast();
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(true);
   const [chatHistory, setChatHistory] = useState<VerificationHistory | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -136,7 +137,7 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
   // Fetch chat history and listen for updates
   useEffect(() => {
     if (!user || !chatId) return;
-    setIsLoading(true);
+    setIsPageLoading(true);
     const chatDocRef = doc(db, 'users', user.uid, 'verificationHistory', chatId);
     const unsubscribe = onSnapshot(chatDocRef, (doc) => {
       if (doc.exists()) {
@@ -145,22 +146,17 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
       } else {
         toast({ variant: 'destructive', title: 'Chat not found.' });
       }
-      setIsLoading(false);
+      setIsPageLoading(false);
     });
 
     return () => unsubscribe();
-  }, [user, chatId]);
+  }, [user, chatId, toast]);
 
   const handleSendMessage = async () => {
       if (!inputValue.trim() || !user) return;
       const message = inputValue;
       setInputValue('');
       setIsLoading(true);
-      
-      const chatDocRef = doc(db, 'users', user.uid, 'verificationHistory', chatId);
-      await updateDoc(chatDocRef, {
-         messages: arrayUnion({ role: 'user', content: message }),
-      });
 
       try {
         await verifyContentAndRecord({
@@ -176,6 +172,7 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
             title: 'Analysis Failed',
             description: error.message || 'Could not verify the content. Please try again.',
         });
+        const chatDocRef = doc(db, 'users', user.uid, 'verificationHistory', chatId);
         await updateDoc(chatDocRef, {
             messages: arrayUnion({ role: 'assistant', content: { error: error.message } }),
         });
@@ -184,18 +181,18 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
       }
   };
 
-  const getVerdictBadge = (verdict: UnifiedReport['finalVerdict']) => {
+  const getVerdictBadge = (verdict: VerificationReport['verdict']) => {
     switch(verdict) {
-      case 'verified_true': return <Badge variant="default" className="bg-green-600 hover:bg-green-700"><CheckCircle className="mr-2 h-4 w-4" />True</Badge>;
-      case 'verified_false': return <Badge variant="destructive"><XCircle className="mr-2 h-4 w-4" />Fake</Badge>;
-      case 'misleading': return <Badge variant="destructive" className="bg-orange-500 hover:bg-orange-600"><AlertTriangle className="mr-2 h-4 w-4" />Misleading</Badge>;
-      default: return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-black"><AlertTriangle className="mr-2 h-4 w-4" />Suspicious</Badge>;
+      case 'True': return <Badge variant="default" className="bg-green-600 hover:bg-green-700"><CheckCircle className="mr-2 h-4 w-4" />True</Badge>;
+      case 'False': return <Badge variant="destructive"><XCircle className="mr-2 h-4 w-4" />False</Badge>;
+      case 'Suspicious': return <Badge variant="destructive" className="bg-orange-500 hover:bg-orange-600"><AlertTriangle className="mr-2 h-4 w-4" />Suspicious</Badge>;
+      default: return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-black"><AlertTriangle className="mr-2 h-4 w-4" />Unverifiable</Badge>;
     }
   };
 
-  if (!chatHistory && isLoading) {
+  if (isPageLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
+      <div className="flex h-screen w-full items-center justify-center bg-[#131314]">
         <Spinner />
       </div>
     );
@@ -220,26 +217,25 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
                   )}
                   {msg.role === 'assistant' && (
                     <div>
-                      {(msg.content as UnifiedReport).finalVerdict ? (
+                      {(msg.content as VerificationReport).verdict ? (
                           <Card className="bg-card/80">
                             <CardHeader className="flex flex-row justify-between items-center">
                                 <CardTitle>Verification Result</CardTitle>
-                                {getVerdictBadge((msg.content as UnifiedReport).finalVerdict)}
+                                {getVerdictBadge((msg.content as VerificationReport).verdict)}
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div>
                                     <h3 className="font-semibold mb-1">Explanation</h3>
-                                    <p className="text-sm text-muted-foreground">{(msg.content as UnifiedReport).summary}</p>
+                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{(msg.content as VerificationReport).explanation}</p>
                                 </div>
                                  <div>
                                     <h3 className="font-semibold mb-1">Sources</h3>
                                     <ul className="list-disc pl-5 text-sm">
-                                        {(msg.content as UnifiedReport).evidence.map((src, i) => (
+                                        {(msg.content as VerificationReport).sources.map((src, i) => (
                                           <li key={i}>
-                                            <a href={src.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                                              {src.title}
+                                            <a href={src} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                              {src}
                                             </a>
-                                            <span className="text-muted-foreground text-xs ml-2">(Reliability: {Math.round(src.reliability * 100)}%)</span>
                                           </li>
                                         ))}
                                     </ul>

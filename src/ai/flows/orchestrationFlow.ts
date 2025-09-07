@@ -9,12 +9,10 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { orchestrationAgent } from '@/ai/orchestration';
 import { UnifiedReport } from '@/ai/orchestration/types';
 import { z } from 'zod';
-import { doc, setDoc, serverTimestamp, getDoc, addDoc, collection } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc, addDoc, collection, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { v4 as uuidv4 } from 'uuid';
 
 // Define Zod schema for the input, mirroring VerificationRequest but simplified for the flow
 const OrchestrationFlowInputSchema = z.object({
@@ -38,9 +36,13 @@ const OrchestrationFlowInputSchema = z.object({
 
 export type OrchestrationFlowInput = z.infer<typeof OrchestrationFlowInputSchema>;
 
-// The output is the UnifiedReport, which doesn't need a separate Zod schema here
-// as we'll be returning the object directly and can type it.
-export type OrchestrationFlowOutput = UnifiedReport & { chatId: string };
+const VerificationResponseSchema = z.object({
+  verdict: z.enum(['True', 'False', 'Suspicious', 'Unverifiable']).describe("The final verdict on the content's authenticity."),
+  explanation: z.string().describe("A detailed explanation for the verdict."),
+  sources: z.array(z.string().url()).describe("A list of URLs to reliable sources that support the verdict."),
+});
+
+export type OrchestrationFlowOutput = z.infer<typeof VerificationResponseSchema> & { chatId: string };
 
 const summarizeTitlePrompt = ai.definePrompt({
     name: 'summarizeTitlePrompt',
@@ -55,59 +57,76 @@ Title:
 `,
 });
 
+const verificationPrompt = ai.definePrompt({
+    name: 'verificationPrompt',
+    input: { schema: z.string() },
+    output: { schema: VerificationResponseSchema },
+    prompt: `You are a highly advanced AI fact-checking expert named VEDA. Your task is to analyze the provided content and determine its authenticity.
+
+Content to Analyze:
+"{{{input}}}"
+
+Follow these steps:
+1.  **Analyze the Content**: Carefully examine the text. Identify the main claims.
+2.  **Search for Evidence**: Search the web for credible sources to verify or debunk the claims.
+3.  **Formulate Verdict**: Based on your research, determine if the content is 'True', 'False', 'Suspicious', or 'Unverifiable'.
+4.  **Write Explanation**: Provide a clear, unbiased explanation of your findings.
+5.  **List Sources**: Provide at least 2-3 direct URLs to the most credible sources.
+
+Produce the output in the required JSON format.
+`,
+});
+
 
 const orchestrationFlow = ai.defineFlow(
   {
     name: 'orchestrationFlow',
     inputSchema: OrchestrationFlowInputSchema,
-    // We can't easily represent the complex UnifiedReport as a Zod schema without duplication,
-    // so we'll use z.any() and rely on TypeScript for type safety.
-    outputSchema: z.any(), 
+    outputSchema: z.any(),
   },
   async (input): Promise<OrchestrationFlowOutput> => {
-    const { userId, content, contentType, metadata, priority } = input;
+    const { userId, content } = input;
     let { chatId } = input;
 
-    // 1. Call the orchestration agent
-    const result = await orchestrationAgent.verifyContent(content, contentType, metadata, priority);
-
-    if (!result.success || !result.report) {
-      throw new Error(result.error || "Verification failed to produce a report.");
-    }
-    
-    // 2. Handle Firestore history
-    if (chatId) {
-        // Existing chat: update the document
-        const historyRef = doc(db, 'users', userId, 'verificationHistory', chatId);
-        await setDoc(historyRef, {
-            messages: [
-                { role: 'user', content: content },
-                { role: 'assistant', content: JSON.parse(JSON.stringify(result.report)) }
-            ],
-            report: JSON.parse(JSON.stringify(result.report)),
-            timestamp: serverTimestamp(),
-        }, { merge: true });
-
-    } else {
-        // New chat: create a new document
+    // 1. If no chatId is provided, create a new chat history document first.
+    if (!chatId) {
         const title = await summarizeTitlePrompt(content);
         const historyCollectionRef = collection(db, 'users', userId, 'verificationHistory');
         const newDocRef = await addDoc(historyCollectionRef, {
             title: title || 'Untitled Verification',
             query: content,
-            report: JSON.parse(JSON.stringify(result.report)),
+            report: null, // Start with no report
             timestamp: serverTimestamp(),
             messages: [
-                { role: 'user', content: content },
-                { role: 'assistant', content: JSON.parse(JSON.stringify(result.report)) }
+                { role: 'user', content: content }
             ],
         });
         chatId = newDocRef.id;
+    } else {
+        // If it's an existing chat, just add the user message
+        const historyRef = doc(db, 'users', userId, 'verificationHistory', chatId);
+        await updateDoc(historyRef, {
+            messages: arrayUnion({ role: 'user', content: content }),
+        });
     }
 
-    return { ...result.report, chatId };
+    // 2. Call the verification AI
+    const result = await verificationPrompt(content);
+    if (!result) {
+        throw new Error("Verification failed to produce a report.");
+    }
+    
+    // 3. Save the AI's response to the chat history
+    const historyRef = doc(db, 'users', userId, 'verificationHistory', chatId);
+    await updateDoc(historyRef, {
+        report: JSON.parse(JSON.stringify(result)), // Save the latest report
+        messages: arrayUnion({ role: 'assistant', content: JSON.parse(JSON.stringify(result)) }),
+    });
+
+    return { ...result, chatId };
   }
 );
+
 
 /**
  * Public-facing function to be called from the client.

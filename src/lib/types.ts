@@ -1,7 +1,15 @@
 
 
-import { UnifiedReport } from "@/ai/orchestration";
 import { FieldValue, Timestamp } from "firebase/firestore";
+
+// This is a simplified report structure for the direct Gemini verification.
+// The full UnifiedReport from the orchestration agent can be used later.
+export interface VerificationReport {
+    verdict: 'True' | 'False' | 'Suspicious' | 'Unverifiable';
+    explanation: string;
+    sources: string[];
+}
+
 
 export type UserRole = 'civic' | 'sentinel' | 'ground_sentinel' | 'council' | 'state_officer' | 'govt_admin';
 
@@ -97,15 +105,14 @@ export interface SpotlightItem {
 
 export interface ChatMessage {
     role: 'user' | 'assistant';
-    content: string | UnifiedReport | { error: string };
+    content: string | VerificationReport | { error: string };
 }
 
 export interface VerificationHistory {
     id: string;
     title: string;
     query: string;
-    report: UnifiedReport | null;
+    report: VerificationReport | null;
     timestamp: FieldValue;
     messages: ChatMessage[];
 }
-    
