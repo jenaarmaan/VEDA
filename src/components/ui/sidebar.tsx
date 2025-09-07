@@ -218,7 +218,7 @@ const SidebarContent = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="content"
-      className={cn("flex min-h-0 flex-1 flex-col gap-2 overflow-auto", className)}
+      className={cn("flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden", className)}
       {...props}
     />
   )
@@ -365,5 +365,3 @@ export {
   SidebarMenuItem,
   SidebarMenuButton,
 }
-
-    

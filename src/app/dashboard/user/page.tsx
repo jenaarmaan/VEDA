@@ -37,6 +37,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -46,26 +47,18 @@ import SpotlightCard from '@/components/dashboard/SpotlightCard';
 
 type View = 'chat' | 'learn' | 'recent';
 
-export default function GeneralUserDashboard() {
+function RecentItemsList() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [reports, setReports] = useState<Report[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(true);
-  const [view, setView] = useState<View>('chat');
-  const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<AnalyzeContentOutput | null>(null);
-  const [spotlightNews, setSpotlightNews] = useState<SpotlightItem[]>([
-    // Placeholder data
-    { type: 'real', title: 'Scientists Discover Breakthrough in Renewable Energy', summary: 'A new solar panel technology promises to double efficiency rates...', source: 'Science Today', verdict: 'True' },
-    { type: 'fake', title: 'Warning: Viral Video Falsely Claims New Tax Law', summary: 'A widely circulated video is using deceptive edits to spread misinformation...', source: 'Internal Alert', verdict: 'Fake' },
-    { type: 'real', title: 'Global Economic Summit Concludes with New Trade Agreements', summary: 'Leaders from 20 nations signed new pacts to promote fair trade...', source: 'Global Times', verdict: 'True' },
-  ]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchReports() {
-      if (!user) return;
-      setLoadingHistory(true);
+      if (!user) {
+        setLoading(false);
+        return;
+      };
+      setLoading(true);
       try {
         const reportsRef = collection(db, 'reports');
         const q = query(
@@ -82,13 +75,100 @@ export default function GeneralUserDashboard() {
       } catch (error) {
         console.error('Error fetching reports: ', error);
       } finally {
-        setLoadingHistory(false);
+        setLoading(false);
       }
     }
-    if (view === 'recent') {
-      fetchReports();
-    }
-  }, [user, view]);
+    fetchReports();
+  }, [user]);
+
+  if (loading) {
+    return <div className="p-4 text-center"><Spinner /></div>;
+  }
+  
+  if (reports.length === 0) {
+    return <p className="p-4 text-xs text-muted-foreground text-center">No recent activity.</p>
+  }
+
+  return (
+    <div className="px-2 space-y-1">
+      {reports.map(report => (
+         <div key={report.id} className="text-sm p-2 rounded-md hover:bg-sidebar-accent truncate text-muted-foreground cursor-pointer">
+           {report.contentData}
+         </div>
+      ))}
+    </div>
+  )
+}
+
+
+function DashboardSidebarContent() {
+  const { view, setView } = useDashboardView();
+  const { state } = useSidebar();
+  const [showRecent, setShowRecent] = useState(true);
+
+  return (
+    <>
+      <SidebarHeader />
+      <SidebarContent className="p-2">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <Button asChild variant="secondary" className="w-full justify-start text-base h-12">
+              <Link href="/report/new">
+                <Plus className="mr-2 h-5 w-5" />
+                <span className={cn(state === "collapsed" && "hidden")}>New Verification</span>
+              </Link>
+            </Button>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={() => setView('learn')} isActive={view === 'learn'}>
+              <BookOpen />
+              Learn
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem className="flex flex-col items-start">
+            <SidebarMenuButton onClick={() => setShowRecent(!showRecent)} isActive={view === 'recent'} className="w-full">
+              <History />
+              Recent
+            </SidebarMenuButton>
+            {state === 'expanded' && showRecent && <RecentItemsList />}
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton>
+              <Settings />
+              Settings
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </>
+  );
+}
+
+const DashboardViewContext = React.createContext<{ view: View; setView: React.Dispatch<React.SetStateAction<View>> } | null>(null);
+
+function useDashboardView() {
+  const context = React.useContext(DashboardViewContext);
+  if (!context) {
+    throw new Error('useDashboardView must be used within a DashboardViewProvider');
+  }
+  return context;
+}
+
+export default function GeneralUserDashboard() {
+  const { toast } = useToast();
+  const [view, setView] = useState<View>('chat');
+  const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<AnalyzeContentOutput | null>(null);
+  const [spotlightNews, setSpotlightNews] = useState<SpotlightItem[]>([
+    { type: 'real', title: 'Scientists Discover Breakthrough in Renewable Energy', summary: 'A new solar panel technology promises to double efficiency rates...', source: 'Science Today', verdict: 'True' },
+    { type: 'fake', title: 'Warning: Viral Video Falsely Claims New Tax Law', summary: 'A widely circulated video is using deceptive edits to spread misinformation...', source: 'Internal Alert', verdict: 'Fake' },
+    { type: 'real', title: 'Global Economic Summit Concludes with New Trade Agreements', summary: 'Leaders from 20 nations signed new pacts to promote fair trade...', source: 'Global Times', verdict: 'True' },
+  ]);
 
   const handleAnalysis = async () => {
     if (!inputValue.trim()) return;
@@ -179,28 +259,7 @@ export default function GeneralUserDashboard() {
           </div>
         );
       case 'recent':
-        return (
-          <div className="w-full max-w-5xl mx-auto">
-            <h2 className="text-3xl font-bold text-center mb-8">Your Recent Verifications</h2>
-            {loadingHistory ? <Spinner /> : (
-              <div className="space-y-4">
-                {reports.map(report => (
-                  <Card key={report.id} className="bg-card/80">
-                    <CardContent className="p-4">
-                      <p className="truncate font-mono text-sm">{report.contentData}</p>
-                      <div className="flex justify-between items-center mt-2">
-                        <Badge variant={report.aiVerdict === 'True' ? 'default' : report.aiVerdict === 'Fake' ? 'destructive' : 'secondary'} className={report.aiVerdict === 'True' ? 'bg-green-600' : ''}>
-                          {report.aiVerdict}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">{new Date(report.createdAt).toLocaleString()}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        );
+          // This view is now handled inside the sidebar, so the main panel can revert to chat
       case 'chat':
       default:
         return (
@@ -282,53 +341,19 @@ export default function GeneralUserDashboard() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen bg-[#131314] text-gray-200">
-        <Sidebar>
-          <SidebarHeader />
-          <SidebarContent className="p-2">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <Button asChild variant="secondary" className="w-full justify-start text-base">
-                  <Link href="/report/new">
-                    <Plus className="mr-2 h-5 w-5" />
-                    New Report
-                  </Link>
-                </Button>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => setView('learn')} isActive={view === 'learn'}>
-                  <BookOpen />
-                  Learn
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => setView('recent')} isActive={view === 'recent'}>
-                  <History />
-                  Recent
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarContent>
-          <SidebarFooter>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Settings />
-                  Settings
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarFooter>
-        </Sidebar>
+      <DashboardViewContext.Provider value={{ view, setView }}>
+        <div className="flex min-h-screen bg-[#131314] text-gray-200">
+          <Sidebar>
+            <DashboardSidebarContent />
+          </Sidebar>
 
-        <main className="flex-1 flex flex-col h-screen">
-          <div className="flex-grow flex flex-col items-center justify-center p-6 overflow-y-auto">
-            {renderMainContent()}
-          </div>
-        </main>
-      </div>
+          <main className="flex-1 flex flex-col h-screen">
+            <div className="flex-grow flex flex-col items-center justify-center p-6 overflow-y-auto">
+              {renderMainContent()}
+            </div>
+          </main>
+        </div>
+      </DashboardViewContext.Provider>
     </SidebarProvider>
   );
 }
-
-    
