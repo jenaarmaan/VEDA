@@ -19,7 +19,8 @@ export class SocialGraphAgentAdapter implements SpecializedAgent {
   readonly supportedContentTypes: ContentType[] = [
     'social_media_post',
     'news_article',
-    'multimedia_content'
+    'multimedia_content',
+    'unknown'
   ];
   readonly maxProcessingTime = 18000; // 18 seconds
 

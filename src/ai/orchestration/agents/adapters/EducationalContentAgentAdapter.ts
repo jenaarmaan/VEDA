@@ -20,7 +20,8 @@ export class EducationalContentAgentAdapter implements SpecializedAgent {
     'educational_content',
     'academic_paper',
     'video_content',
-    'news_article'
+    'news_article',
+    'unknown'
   ];
   readonly maxProcessingTime = 25000; // 25 seconds
 

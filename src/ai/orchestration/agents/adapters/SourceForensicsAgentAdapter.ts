@@ -23,7 +23,8 @@ export class SourceForensicsAgentAdapter implements SpecializedAgent {
     'image_with_text',
     'academic_paper',
     'government_document',
-    'multimedia_content'
+    'multimedia_content',
+    'unknown'
   ];
   readonly maxProcessingTime = 20000; // 20 seconds
 
