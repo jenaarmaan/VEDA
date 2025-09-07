@@ -1,21 +1,33 @@
 
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only read and write to their own user document.
-    match /users/{userId} {
-      allow read, write: if request.auth.uid == userId;
-
-      // Users can create, read, and update documents in their own verificationHistory.
-      // Writes are limited to specific fields to prevent tampering.
-      match /verificationHistory/{historyId} {
-        allow read: if request.auth.uid == userId;
-        allow create: if request.auth.uid == userId;
-        allow update: if request.auth.uid == userId;
-      }
+    
+    // Default deny all reads and writes to prevent unauthorized access
+    match /{document=**} {
+      allow read, write: if false;
     }
 
-    // Disallow all other reads/writes for security.
-    // Add rules for other collections here if needed.
+    // Allow users to read their own user profile document.
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Allow users to read and write to their own verificationHistory subcollection.
+    // This is crucial for creating, updating, and viewing their chat sessions.
+    match /users/{userId}/verificationHistory/{docId} {
+      allow read, write, create, update: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Allow any authenticated user to create a new contact message.
+    // This secures the contact form.
+    match /contacts/{contactId} {
+      allow create: if request.auth != null;
+    }
+
+    // Note: Add any other specific rules for your application below.
+    // The orchestration agent (server-side flow) will have admin access 
+    // and bypass these client-side rules for its operations.
   }
 }
