@@ -1,4 +1,5 @@
 
+
 import { FieldValue, Timestamp } from "firebase/firestore";
 
 export type UserRole = 'civic' | 'sentinel' | 'ground_sentinel' | 'council' | 'state_officer' | 'govt_admin';
@@ -84,3 +85,13 @@ export interface ContactMessage {
     message: string;
     createdAt: FieldValue;
 }
+
+export interface SpotlightItem {
+  type: 'real' | 'fake';
+  title: string;
+  summary: string;
+  source: string;
+  verdict: 'True' | 'Fake';
+}
+
+    

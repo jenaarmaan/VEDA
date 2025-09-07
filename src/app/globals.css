@@ -23,7 +23,7 @@ body {
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 211 100% 50%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 228 9% 21%;
     --input: 228 9% 21%;
@@ -59,7 +59,7 @@ body {
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 211 100% 50%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 228 9% 21%;
     --input: 228 9% 21%;
@@ -88,3 +88,5 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+    
