@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, 'use, useEffect, useState'
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -53,6 +53,7 @@ function RecentItemsList() {
   const { user } = useAuth();
   const [history, setHistory] = useState<VerificationHistory[]>([]);
   const [loading, setLoading] = useState(true);
+  const { state } = useSidebar();
 
   useEffect(() => {
     if (!user) {
@@ -83,11 +84,11 @@ function RecentItemsList() {
   }
   
   if (history.length === 0) {
-    return <p className="p-4 text-xs text-muted-foreground text-center">No recent activity.</p>
+     return <p className={cn("p-4 text-xs text-muted-foreground text-center", state === "collapsed" && "hidden")}>No recent activity.</p>
   }
 
   return (
-    <div className="px-2 space-y-1">
+    <div className={cn("px-2 space-y-1", state === "collapsed" && "hidden")}>
       {history.map(item => (
          <div key={item.id} className="text-sm p-2 rounded-md hover:bg-sidebar-accent truncate text-muted-foreground cursor-pointer">
            {item.title}
@@ -117,24 +118,24 @@ function DashboardSidebarContent() {
             </Button>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => setView('learn')} isActive={view === 'learn'}>
+            <SidebarMenuButton onClick={() => setView('learn')} isActive={view === 'learn'} tooltip="Learn">
               <BookOpen />
                <span className={cn(state === "collapsed" && "hidden")}>Learn</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem className="flex flex-col items-start">
-             <SidebarMenuButton onClick={() => setShowRecent(!showRecent)} isActive={view === 'recent'} className="w-full">
+             <SidebarMenuButton onClick={() => setShowRecent(!showRecent)} isActive={view === 'recent'} className="w-full" tooltip="Recent">
               <History />
               <span className={cn(state === "collapsed" && "hidden")}>Recent</span>
             </SidebarMenuButton>
-            {state === 'expanded' && showRecent && <RecentItemsList />}
+            {showRecent && <RecentItemsList />}
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton>
+            <SidebarMenuButton tooltip="Settings">
               <Settings />
                <span className={cn(state === "collapsed" && "hidden")}>Settings</span>
             </SidebarMenuButton>
@@ -180,9 +181,8 @@ export default function GeneralUserDashboard() {
       const result = await verifyContentAndRecord({ 
         userId: user.uid,
         content: originalQuery,
-        contentType: 'text',
-        metadata: { source: 'user_input' },
-        priority: 'medium'
+        contentType: 'unknown', // Let the orchestrator decide
+        metadata: { source: 'user_input' }
       });
       setAnalysisResult(result);
     } catch (error: any) {
@@ -267,7 +267,7 @@ export default function GeneralUserDashboard() {
       case 'chat':
       default:
         return (
-          <div className="w-full flex flex-col items-center flex-1 h-full">
+          <div className="w-full mx-auto flex flex-col items-center flex-1 h-full">
             <div className="flex-grow w-full flex flex-col items-center justify-center">
               {!analysisResult && !isLoading && (
                 <div className="text-center">
@@ -318,7 +318,7 @@ export default function GeneralUserDashboard() {
             </div>
 
              <div className="w-full mt-auto mb-4 px-4">
-                <div className="w-full max-w-4xl mx-auto px-4 py-2 bg-[#1e1f20] rounded-full flex items-center gap-2 border border-gray-700 focus-within:ring-2 focus-within:ring-primary transition-shadow">
+                <div className="w-full mx-auto px-4 py-2 bg-[#1e1f20] rounded-full flex items-center gap-2 border border-gray-700 focus-within:ring-2 focus-within:ring-primary transition-shadow">
                     <Button variant="ghost" size="icon" className="text-gray-400 hover:bg-gray-700 rounded-full">
                         <Plus />
                     </Button>
@@ -362,8 +362,8 @@ export default function GeneralUserDashboard() {
             <DashboardSidebarContent />
           </Sidebar>
 
-          <main className="flex-1 flex flex-col h-screen">
-            <div className="flex-1 p-6 overflow-y-auto">
+          <main className="flex-1 flex flex-col">
+            <div className="flex-1 p-6 overflow-y-auto flex">
               {renderMainContent()}
             </div>
           </main>
