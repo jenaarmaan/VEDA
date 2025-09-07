@@ -223,7 +223,7 @@ export default function GeneralUserDashboard() {
               </div>
             </div>
 
-             <div className="w-full mt-auto mb-4 px-4">
+             <div className="w-full mt-auto mb-4">
                 <div className="w-full max-w-4xl mx-auto px-4 py-2 bg-[#1e1f20] rounded-full flex items-center gap-2 border border-gray-700 focus-within:ring-2 focus-within:ring-primary transition-shadow">
                     <Button variant="ghost" size="icon" className="text-gray-400 hover:bg-gray-700 rounded-full">
                         <Plus />
@@ -267,7 +267,7 @@ export default function GeneralUserDashboard() {
           </Sidebar>
 
           <main className="flex-1 flex flex-col overflow-y-auto">
-            <div className="flex-1 p-6 flex">
+            <div className="flex-1 p-6 flex items-center justify-center">
               {renderMainContent()}
             </div>
           </main>

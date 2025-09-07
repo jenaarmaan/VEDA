@@ -9,7 +9,6 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { UnifiedReport } from '@/ai/orchestration/types';
 import { z } from 'zod';
 import { doc, setDoc, serverTimestamp, getDoc, addDoc, collection, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -57,23 +56,17 @@ Title:
 `,
 });
 
-const verificationPrompt = ai.definePrompt({
-    name: 'verificationPrompt',
+const placeholderVerificationPrompt = ai.definePrompt({
+    name: 'placeholderVerificationPrompt',
     input: { schema: z.string() },
     output: { schema: VerificationResponseSchema },
-    prompt: `You are a highly advanced AI fact-checking expert named VEDA. Your task is to analyze the provided content and determine its authenticity.
+    prompt: `You are an AI assistant named VEDA. The user has submitted the following content for verification:
 
-Content to Analyze:
 "{{{input}}}"
 
-Follow these steps:
-1.  **Analyze the Content**: Carefully examine the text. Identify the main claims.
-2.  **Search for Evidence**: Search the web for credible sources to verify or debunk the claims.
-3.  **Formulate Verdict**: Based on your research, determine if the content is 'True', 'False', 'Suspicious', or 'Unverifiable'.
-4.  **Write Explanation**: Provide a clear, unbiased explanation of your findings.
-5.  **List Sources**: Provide at least 2-3 direct URLs to the most credible sources.
+Acknowledge the user's query. State that the full analysis agent is currently being integrated and will be available soon. For now, provide a placeholder response.
 
-Produce the output in the required JSON format.
+Produce the output in the required JSON format with a verdict of 'Unverifiable' and a placeholder explanation.
 `,
 });
 
@@ -90,10 +83,11 @@ const orchestrationFlow = ai.defineFlow(
 
     // 1. If no chatId is provided, create a new chat history document first.
     if (!chatId) {
-        const title = await summarizeTitlePrompt(content);
+        const titleResult = await summarizeTitlePrompt(content);
+        const title = titleResult || 'Untitled Verification';
         const historyCollectionRef = collection(db, 'users', userId, 'verificationHistory');
         const newDocRef = await addDoc(historyCollectionRef, {
-            title: title || 'Untitled Verification',
+            title: title,
             query: content,
             report: null, // Start with no report
             timestamp: serverTimestamp(),
@@ -110,8 +104,8 @@ const orchestrationFlow = ai.defineFlow(
         });
     }
 
-    // 2. Call the verification AI
-    const result = await verificationPrompt(content);
+    // 2. Call the placeholder verification AI
+    const result = await placeholderVerificationPrompt(content);
     if (!result) {
         throw new Error("Verification failed to produce a report.");
     }
