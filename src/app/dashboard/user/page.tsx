@@ -1,10 +1,10 @@
 
 'use client';
 
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Report, SpotlightItem } from '@/lib/types';
@@ -44,6 +44,7 @@ import { Badge } from '@/components/ui/badge';
 import { analyzeContent, AnalyzeContentInput, AnalyzeContentOutput } from '@/ai/flows/analyzeContentFlow';
 import { useToast } from '@/hooks/use-toast';
 import SpotlightCard from '@/components/dashboard/SpotlightCard';
+import { cn } from '@/lib/utils';
 
 type View = 'chat' | 'learn' | 'recent';
 
