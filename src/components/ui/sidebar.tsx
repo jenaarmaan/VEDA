@@ -304,7 +304,8 @@ const SidebarMenuButton = React.forwardRef<
     const { isMobile, state } = useSidebar()
     
     const buttonContent = (
-      <>
+      // Use a div instead of React.Fragment to accept props
+      <div className="flex w-full items-center gap-2 overflow-hidden">
         {React.Children.map(children, (child, i) => {
           if (React.isValidElement(child) && i === 0) { // Icon
             return React.cloneElement(child, {
@@ -316,7 +317,7 @@ const SidebarMenuButton = React.forwardRef<
           }
           return child;
         })}
-      </>
+      </div>
     );
 
     const button = (
