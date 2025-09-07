@@ -170,7 +170,7 @@ export class MySourceForensicsAgent implements SpecializedAgent {
         processingTime,
         timestamp: Date.now(),
         metadata: {
-          sourceUrl: request.metadata.url,
+          sourceUrl: request.metadata?.url,
           analysisMethod: 'domain_reputation_analysis'
         }
       };
@@ -204,8 +204,8 @@ export class MySourceForensicsAgent implements SpecializedAgent {
     // - Historical content analysis
     // - Cross-reference with known fact-checking databases
     
-    const url = request.metadata.url;
-    const source = request.metadata.source;
+    const url = request.metadata?.url;
+    const source = request.metadata?.source;
     
     // Mock implementation
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -331,7 +331,7 @@ export class MyMultilingualAgent implements SpecializedAgent {
     // - Cross-language verification
     
     const content = request.content;
-    const language = request.metadata.language || this.detectLanguage(content);
+    const language = request.metadata?.language || this.detectLanguage(content);
     
     await new Promise(resolve => setTimeout(resolve, 1500));
     
@@ -399,7 +399,7 @@ export class MyMultilingualAgent implements SpecializedAgent {
 }
 
 // Example: Setting up the orchestration system with your agents
-export function setupOrchestrationWithMyAgents() {
+export function setupOrchestrationWithMyAgents(): void {
   console.log('🔧 Setting up orchestration with your custom agents...');
   
   // Clear existing agents
@@ -431,7 +431,7 @@ export function setupOrchestrationWithMyAgents() {
 }
 
 // Example: Testing your integrated system
-export async function testIntegratedSystem() {
+export async function testIntegratedSystem(): Promise<void> {
   console.log('🧪 Testing integrated system...');
   
   setupOrchestrationWithMyAgents();
@@ -440,12 +440,12 @@ export async function testIntegratedSystem() {
     {
       content: 'Scientists discover new planet with potential for life',
       type: 'news_article' as ContentType,
-      metadata: { source: 'reuters.com', language: 'en' }
+      metadata: { source: 'reuters.com', language: 'en', url: 'https://reuters.com/article' }
     },
     {
       content: 'Los científicos descubren nuevo planeta con potencial para la vida',
       type: 'news_article' as ContentType,
-      metadata: { source: 'bbc.com', language: 'es' }
+      metadata: { source: 'bbc.com', language: 'es', url: 'https://bbc.com/article' }
     },
     {
       content: 'Breaking: New study shows amazing results!',
@@ -458,25 +458,29 @@ export async function testIntegratedSystem() {
     console.log(`\n📝 Test case ${index + 1}:`);
     console.log(`Content: ${testCase.content.substring(0, 50)}...`);
     
-    const result = await orchestrationAgent.verifyContent(
-      testCase.content,
-      testCase.type,
-      testCase.metadata,
-      'medium'
-    );
-    
-    if (result.success && result.report) {
-      console.log(`✅ Verdict: ${result.report.finalVerdict}`);
-      console.log(`📊 Confidence: ${Math.round(result.report.confidence * 100)}%`);
-      console.log(`⏱️ Processing time: ${result.processingTime}ms`);
-    } else {
-      console.log(`❌ Failed: ${result.error}`);
+    try {
+      const result = await orchestrationAgent.verifyContent(
+        testCase.content,
+        testCase.type,
+        testCase.metadata,
+        'medium'
+      );
+      
+      if (result.success && result.report) {
+        console.log(`✅ Verdict: ${result.report.finalVerdict}`);
+        console.log(`📊 Confidence: ${Math.round(result.report.confidence * 100)}%`);
+        console.log(`⏱️ Processing time: ${result.processingTime}ms`);
+      } else {
+        console.log(`❌ Failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.log(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
 
 // Example: Monitoring your integrated system
-export async function monitorIntegratedSystem() {
+export async function monitorIntegratedSystem(): Promise<void> {
   console.log('📊 Monitoring integrated system...');
   
   // Set up health monitoring
@@ -509,12 +513,5 @@ export async function monitorIntegratedSystem() {
   console.log(`  Cache Hit Rate: ${Math.round(stats.cacheHitRate * 100)}%`);
 }
 
-// Export integration functions
-export {
-  MyContentAnalysisAgent,
-  MySourceForensicsAgent,
-  MyMultilingualAgent,
-  setupOrchestrationWithMyAgents,
-  testIntegratedSystem,
-  monitorIntegratedSystem
-};
+// Note: Removed duplicate export statement that was causing the "Cannot redeclare exported variable" errors
+// All exports are now handled by the inline 'export' keywords on the class and function declarations
