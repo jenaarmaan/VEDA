@@ -62,7 +62,7 @@ export default function Header() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                    <DropdownMenuItem asChild>
-                     <Link href="/dashboard/user"><User className="mr-2 h-4 w-4" />My Profile</Link>
+                     <Link href="/profile"><User className="mr-2 h-4 w-4" />My Profile</Link>
                    </DropdownMenuItem>
                    <DropdownMenuItem asChild>
                      <Link href="/contact"><MessageSquare className="mr-2 h-4 w-4" />Contact Us</Link>
