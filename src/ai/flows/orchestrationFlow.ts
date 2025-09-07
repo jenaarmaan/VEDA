@@ -83,9 +83,12 @@ const orchestrationFlow = ai.defineFlow(
 
     // 1. If no chatId, create a new chat session
     if (!chatId) {
+        // Generate a concise title first.
+        const title = await summarizeTitlePrompt(content) || 'Untitled Verification';
+        
         const historyCollectionRef = collection(db, 'users', userId, 'verificationHistory');
         const newDocRef = await addDoc(historyCollectionRef, {
-            title: "New Query...", // Fast placeholder title
+            title: title,
             query: content,
             report: null,
             timestamp: serverTimestamp(),
@@ -99,26 +102,15 @@ const orchestrationFlow = ai.defineFlow(
             messages: arrayUnion({ role: 'user', content: content }),
         });
     }
-    
-    // 2. If it's the first real message, generate and update the title in the background.
-    const historyRef = doc(db, 'users', userId, 'verificationHistory', chatId);
-    const chatDoc = await getDoc(historyRef);
-    const chatData = chatDoc.data();
-    if (chatData?.messages.length === 1) { 
-        // Don't wait for the title to be generated to make the UI feel faster
-        summarizeTitlePrompt(content).then(titleResult => {
-            const title = titleResult || 'Untitled Verification';
-            updateDoc(historyRef, { title: title });
-        }).catch(err => console.error("Error generating title:", err));
-    }
 
-    // 3. Call the placeholder verification AI
+    // 2. Call the placeholder verification AI
     const result = await placeholderVerificationPrompt(content);
     if (!result) {
         throw new Error("Verification failed to produce a report.");
     }
     
-    // 4. Save the AI's response to the chat history
+    // 3. Save the AI's response to the chat history
+    const historyRef = doc(db, 'users', userId, 'verificationHistory', chatId);
     await updateDoc(historyRef, {
         report: JSON.parse(JSON.stringify(result)), // Save the latest report
         messages: arrayUnion({ role: 'assistant', content: JSON.parse(JSON.stringify(result)) }),
