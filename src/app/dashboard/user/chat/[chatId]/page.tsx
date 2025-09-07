@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, createContext, useContext } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,10 +39,23 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { type VerificationReport } from '@/lib/types';
 import { verifyContentAndRecord } from '@/ai/flows/orchestrationFlow';
-import { doc, onSnapshot, updateDoc, arrayUnion, collection, query, orderBy, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, arrayUnion, collection, query, orderBy, getDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { VerificationHistory } from '@/lib/types';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+type View = 'chat' | 'learn' | 'recent';
+
+const DashboardViewContext = createContext<{ view: View; setView: React.Dispatch<React.SetStateAction<View>> } | null>(null);
+
+function useDashboardView() {
+  const context = useContext(DashboardViewContext);
+  if (!context) {
+    throw new Error('useDashboardView must be used within a DashboardViewProvider');
+  }
+  return context;
+}
 
 // Re-usable Sidebar from the main dashboard page
 function RecentItemsList() {
@@ -80,50 +93,59 @@ function RecentItemsList() {
 }
 
 function DashboardSidebarContent() {
-  const { state } = useSidebar();
-  const [showRecent, setShowRecent] = useState(true);
-
-  return (
-    <>
-      <SidebarHeader />
-      <SidebarContent className="p-2">
-        <SidebarMenu>
-          <SidebarMenuItem>
-             <SidebarMenuButton asChild tooltip="New Verification">
-                <Link href="/dashboard/user" className="w-full justify-start text-base h-12">
-                    <Plus className="h-5 w-5" />
-                    <span className={cn(state === "collapsed" && "hidden")}>New Verification</span>
-                </Link>
-             </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem className="flex flex-col items-start">
-             <SidebarMenuButton onClick={() => setShowRecent(!showRecent)} className="w-full" tooltip="Recent">
-              <History />
-              <span className={cn(state === "collapsed" && "hidden")}>Recent</span>
-            </SidebarMenuButton>
-            {showRecent && <RecentItemsList />}
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarContent>
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Settings">
-              <Settings />
-               <span className={cn(state === "collapsed" && "hidden")}>Settings</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </>
-  );
-}
+    const { view, setView } = useDashboardView();
+    const { state } = useSidebar();
+    const [showRecent, setShowRecent] = useState(true);
+  
+    return (
+      <>
+        <SidebarHeader />
+        <SidebarContent className="p-2">
+          <SidebarMenu>
+            <SidebarMenuItem>
+               <SidebarMenuButton asChild tooltip="New Verification">
+                  <Link href="/dashboard/user" className="w-full justify-start text-base h-12">
+                      <Plus className="h-5 w-5" />
+                      <span className={cn(state === "collapsed" && "hidden")}>New Verification</span>
+                  </Link>
+               </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={() => setView('learn')} isActive={view === 'learn'} tooltip="Learn">
+                <BookOpen />
+                 <span className={cn(state === "collapsed" && "hidden")}>Learn</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem className="flex flex-col items-start">
+               <SidebarMenuButton onClick={() => setShowRecent(!showRecent)} isActive={view === 'recent'} className="w-full" tooltip="Recent">
+                <History />
+                <span className={cn(state === "collapsed" && "hidden")}>Recent</span>
+              </SidebarMenuButton>
+              {showRecent && <RecentItemsList />}
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarContent>
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton tooltip="Settings">
+                <Settings />
+                 <span className={cn(state === "collapsed" && "hidden")}>Settings</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </>
+    );
+  }
 
 
 export default function ChatPage({ params }: { params: { chatId: string } }) {
   const { chatId } = params;
   const { user } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
+  const [view, setView] = useState<View>('chat');
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -152,12 +174,17 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
 
       } else {
         toast({ variant: 'destructive', title: 'Chat not found.' });
+        router.push('/dashboard/user');
       }
       setIsPageLoading(false);
+    }, (error) => {
+        toast({ variant: 'destructive', title: 'Error loading chat', description: error.message });
+        router.push('/dashboard/user');
+        setIsPageLoading(false);
     });
 
     return () => unsubscribe();
-  }, [user, chatId]);
+  }, [user, chatId, router, toast]);
 
   const handleSendMessage = async (content: string, isInitialMessage = false) => {
       if (!content.trim() || !user) return;
@@ -210,6 +237,7 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
 
   return (
     <SidebarProvider>
+     <DashboardViewContext.Provider value={{ view, setView }}>
       <div className="flex h-screen bg-[#131314] text-gray-200">
         <Sidebar>
           <DashboardSidebarContent />
@@ -300,6 +328,7 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
           </div>
         </main>
       </div>
+      </DashboardViewContext.Provider>
     </SidebarProvider>
   );
 }

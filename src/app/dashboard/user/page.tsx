@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, createContext, useContext } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -36,6 +36,16 @@ import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 
 type View = 'chat' | 'learn' | 'recent';
+
+const DashboardViewContext = createContext<{ view: View; setView: React.Dispatch<React.SetStateAction<View>> } | null>(null);
+
+function useDashboardView() {
+  const context = useContext(DashboardViewContext);
+  if (!context) {
+    throw new Error('useDashboardView must be used within a DashboardViewProvider');
+  }
+  return context;
+}
 
 function RecentItemsList() {
   const { user } = useAuth();
@@ -134,15 +144,6 @@ function DashboardSidebarContent() {
   );
 }
 
-const DashboardViewContext = React.createContext<{ view: View; setView: React.Dispatch<React.SetStateAction<View>> } | null>(null);
-
-function useDashboardView() {
-  const context = React.useContext(DashboardViewContext);
-  if (!context) {
-    throw new Error('useDashboardView must be used within a DashboardViewProvider');
-  }
-  return context;
-}
 
 export default function GeneralUserDashboard() {
   const { user } = useAuth();
@@ -160,37 +161,35 @@ export default function GeneralUserDashboard() {
   const handleNewChat = async () => {
     if (!inputValue.trim() || !user) return;
     setIsLoading(true);
-    const tempInputValue = inputValue;
-    setInputValue('');
-
+    
     try {
       const historyCollectionRef = collection(db, 'users', user.uid, 'verificationHistory');
       
       const firstMessage: ChatMessage = {
         role: 'user',
-        content: tempInputValue,
+        content: inputValue,
       };
 
+      // Create doc with a fast placeholder title. The AI will update it later.
       const newDocRef = await addDoc(historyCollectionRef, {
-        title: "New Query", // Placeholder title
-        query: tempInputValue,
+        title: "New Query...", 
+        query: inputValue,
         report: null,
         timestamp: serverTimestamp(),
         messages: [firstMessage],
       });
 
-      // Redirect to the newly created chat page.
+      // Redirect immediately to the new chat page.
       router.push(`/dashboard/user/chat/${newDocRef.id}`);
 
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Failed to Start Chat',
-        description: error.message || 'Could not create a new verification session. Please check your connection and permissions.',
+        description: error.message || 'Could not create a new verification session.',
       });
       setIsLoading(false);
     } 
-    // No finally block to set isLoading false, because we are redirecting away.
   };
 
   const renderMainContent = () => {

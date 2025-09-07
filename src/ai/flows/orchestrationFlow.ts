@@ -78,25 +78,38 @@ const orchestrationFlow = ai.defineFlow(
     outputSchema: z.any(),
   },
   async (input): Promise<OrchestrationFlowOutput> => {
-    const { userId, content, chatId } = input;
+    const { userId, content, chatId: existingChatId } = input;
+    let chatId = existingChatId;
 
+    // 1. If no chatId, create a new chat session
     if (!chatId) {
-        throw new Error("A chatId must be provided to this flow.");
+        const historyCollectionRef = collection(db, 'users', userId, 'verificationHistory');
+        const newDocRef = await addDoc(historyCollectionRef, {
+            title: "New Query...", // Fast placeholder title
+            query: content,
+            report: null,
+            timestamp: serverTimestamp(),
+            messages: [{ role: 'user', content: content }],
+        });
+        chatId = newDocRef.id;
+    } else {
+        // If chat exists, just add the user message
+        const historyRef = doc(db, 'users', userId, 'verificationHistory', chatId);
+        await updateDoc(historyRef, {
+            messages: arrayUnion({ role: 'user', content: content }),
+        });
     }
     
-    // 1. Add user message to existing chat
+    // 2. If it's the first real message, generate and update the title in the background.
     const historyRef = doc(db, 'users', userId, 'verificationHistory', chatId);
-    await updateDoc(historyRef, {
-        messages: arrayUnion({ role: 'user', content: content }),
-    });
-
-    // 2. If it's the first user message, generate and update the title
     const chatDoc = await getDoc(historyRef);
     const chatData = chatDoc.data();
-    if (chatData?.messages.length === 1) { // Check if this is the first real message
-        const titleResult = await summarizeTitlePrompt(content);
-        const title = titleResult || 'Untitled Verification';
-        await updateDoc(historyRef, { title: title });
+    if (chatData?.messages.length === 1) { 
+        // Don't wait for the title to be generated to make the UI feel faster
+        summarizeTitlePrompt(content).then(titleResult => {
+            const title = titleResult || 'Untitled Verification';
+            updateDoc(historyRef, { title: title });
+        }).catch(err => console.error("Error generating title:", err));
     }
 
     // 3. Call the placeholder verification AI
