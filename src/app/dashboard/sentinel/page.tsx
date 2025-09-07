@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useEffect } from "react";
 
@@ -73,62 +74,41 @@ const navIcons = {
 };
 
 function Sidebar({
-  expanded, onExpand, onTeam, onSettings, dark, setDark,
+  expanded, onExpand, onTeam, onOpenSettings, dark,
+  setDark,
 }: {
-  expanded: boolean; onExpand: () => void; onTeam: () => void; onSettings: () => void;
+  expanded: boolean; onExpand: () => void; onTeam: () => void;
+  onOpenSettings: (anchor: HTMLElement | null) => void;
   dark: boolean; setDark: (d: boolean) => void;
 }) {
   return (
     <aside className={`flex flex-col h-screen fixed z-20 transition-all duration-200 bg-neutral-950 dark:bg-black border-r border-neutral-800 select-none 
       ${expanded ? "w-56" : "w-20 sm:w-24"}
     `}>
-      {/* Hamburger */}
       <div className="flex items-center gap-2 px-3 py-4 relative">
         <button aria-label="Expand sidebar" className="p-2 rounded hover:bg-neutral-800 focus:bg-neutral-800" onClick={onExpand}>
           {navIcons.menu}
         </button>
       </div>
-      {/* Gemini blue square logo + SENTINEL */}
       <div className={`flex flex-col transition-all items-center ${expanded ? "mt-1 mb-5" : "mt-3 mb-1"}`}>
         {navIcons.square}
-        <span className={`block font-bold mt-1 text-blue-600 tracking-tighter transition-all duration-150
-          ${expanded ? "text-base" : "text-xs"}
-        `}>
+        <span className={`block font-bold mt-1 text-blue-600 tracking-tighter transition-all duration-150 ${expanded ? "text-base" : "text-xs"}`}>
           SENTINEL
         </span>
       </div>
-      {/* Navigation */}
       <nav className="flex-1 flex flex-col gap-1">
-        <SidebarItem
-          icon={navIcons.history}
-          label="History"
-          expanded={expanded}
-          active
-        />
-        <SidebarItem
-          icon={navIcons.team}
-          label="Team"
-          expanded={expanded}
-          onClick={onTeam}
-        />
-        <SidebarItem
-          icon={navIcons.settings}
-          label="Settings & Help"
-          expanded={expanded}
-          onClick={onSettings}
-        />
+        <SidebarItem icon={navIcons.history} label="History" expanded={expanded} active />
+        <SidebarItem icon={navIcons.team} label="Team" expanded={expanded} onClick={onTeam} />
+        <SidebarItem icon={navIcons.settings} label="Settings & Help" expanded={expanded}
+          onClick={e => onOpenSettings(e.currentTarget)} />
       </nav>
-      {/* Dark / Light mode toggle at bottom */}
       <button
         aria-label="Switch dark/light mode"
         className={`flex items-center gap-2 px-4 py-3 w-full hover:bg-neutral-800/50 group transition-colors 
-        ${expanded ? "justify-start" : "justify-center px-0"}
-        `}
+        ${expanded ? "justify-start" : "justify-center px-0"}`}
         onClick={() => setDark(!dark)}
       >
-        <span className="text-lg">
-          {dark ? navIcons.sun : navIcons.moon}
-        </span>
+        <span className="text-lg">{dark ? navIcons.sun : navIcons.moon}</span>
         <span className={`text-sm text-neutral-200 font-medium transition-all ${expanded ? "block" : "hidden"}`}>
           {dark ? "Light Mode" : "Dark Mode"}
         </span>
@@ -140,7 +120,7 @@ function Sidebar({
 function SidebarItem({
   icon, label, expanded, onClick, active = false,
 }: {
-  icon: React.ReactNode; label: string; expanded: boolean; onClick?: () => void; active?: boolean;
+  icon: React.ReactNode; label: string; expanded: boolean; onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void; active?: boolean;
 }) {
   return (
     <button
@@ -161,11 +141,6 @@ function SidebarItem({
     </button>
   );
 }
-
-/* Team modal, Assign dropdown and main content logic are identical to prior version.
-   Only change: the sidebar structure with collapse/expand and darkmode toggle at bottom.
-   Rest of the dashboard is unchanged except sidebar behavior.
-*/
 
 function TeamModal({ open, onClose, team, setTeam }: { open: boolean; onClose: () => void; team: TeamMember[]; setTeam: (tm: TeamMember[]) => void }) {
   const [editing, setEditing] = useState<string | null>(null);
@@ -261,7 +236,6 @@ function TeamModal({ open, onClose, team, setTeam }: { open: boolean; onClose: (
   ) : null;
 }
 
-
 function AssignDropdown({ caseItem, team, onAssign, onHide }: { caseItem: CaseItem; team: TeamMember[]; onAssign: (a: Assignment) => void; onHide: () => void; }) {
   const assignedIds = caseItem.assignments.map(a => a.officerId);
   const available = team.filter(m => !assignedIds.includes(m.id));
@@ -306,19 +280,96 @@ function AssignDropdown({ caseItem, team, onAssign, onHide }: { caseItem: CaseIt
   );
 }
 
+function SettingsHelpPopover({
+  open, anchorRef, onClose, dark, setDark
+}: {
+  open: boolean;
+  anchorRef: HTMLElement | null;
+  onClose: () => void;
+  dark: boolean;
+  setDark: (d: boolean) => void;
+}) {
+  const [openTheme, setOpenTheme] = useState(false);
+  const [openHelp, setOpenHelp] = useState(false);
+  useEffect(() => {
+    if (open) setOpenTheme(false), setOpenHelp(false);
+    function handle(e: MouseEvent) {
+      if (anchorRef && !anchorRef.contains(e.target as Node) && !(e.target as HTMLElement).closest(".settings-popover"))
+        onClose();
+    }
+    if (open) window.addEventListener("mousedown", handle);
+    return () => window.removeEventListener("mousedown", handle);
+  }, [open, anchorRef, onClose]);
+  if (!open || !anchorRef) return null;
+  return (
+    <div style={{
+      position: "fixed",
+      top: anchorRef.getBoundingClientRect().bottom + 4 + window.scrollY,
+      left: anchorRef.getBoundingClientRect().left + (anchorRef.offsetWidth / 2) - 180,
+      zIndex: 1002,
+      minWidth: 360
+    }}
+      className="settings-popover animate-fadeIn"
+    >
+      <div className="bg-neutral-900 text-white dark:bg-black rounded-xl shadow-2xl px-2 py-2 ring-1 ring-neutral-800 w-[360px]">
+        <MenuButton icon={
+          <svg width={22} height={22} className="inline"><path d="M12 2a10 10 0 110 20 10 10 0 010-20zm0 4v4l3 1" fill="none" stroke="currentColor" strokeWidth={2} /></svg>
+        } label="Theme" onClick={() => setOpenTheme(o => !o)} selected={openTheme} />
+        {openTheme && (
+          <div className="ml-8 py-1">
+            <button className={`block w-full text-left px-3 py-2 rounded ${dark ? "bg-neutral-800 text-blue-300" : "hover:bg-neutral-800/80"} transition`} onClick={() => setDark(true)}>
+              Dark theme
+            </button>
+            <button className={`block w-full text-left px-3 py-2 rounded ${!dark ? "bg-neutral-100 text-blue-600" : "hover:bg-neutral-800/80"} transition`} onClick={() => setDark(false)}>
+              Light theme
+            </button>
+          </div>
+        )}
+        <MenuButton icon={
+          <svg width={22} height={22} className="inline"><path d="M10.2 13.8l5.6-5.6" stroke="currentColor" strokeWidth={2.2} /><circle cx={8.5} cy={15.5} r={1.5} fill="currentColor" /><circle cx={15.5} cy={8.5} r={1.5} fill="currentColor" /></svg>
+        } label="Send feedback" onClick={() => window.alert("Feedback form coming soon!")} />
+        <MenuButton icon={
+          <svg width={22} height={22} className="inline"><rect width={14} height={14} x={4} y={4} rx={2} fill="none" stroke="currentColor" strokeWidth={2} /><path d="M8 10h4M8 14h8" stroke="currentColor" strokeWidth={2} /></svg>
+        } label="Help" onClick={() => setOpenHelp(o => !o)} selected={openHelp} />
+        {openHelp && (
+          <div className="ml-8 py-1">
+            <button className="block w-full text-left px-3 py-2 rounded hover:bg-neutral-800/80" onClick={() => window.location.href = "/about"}>Help Center</button>
+            <button className="block w-full text-left px-3 py-2 rounded hover:bg-neutral-800/80" onClick={() => window.location.href = "/about"}>Privacy</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+function MenuButton({ icon, label, onClick, selected = false }: { icon: React.ReactNode; label: string; onClick: () => void; selected?: boolean }) {
+  return (
+    <button className={`flex items-center w-full text-left px-3 py-2 gap-3 rounded text-md hover:bg-neutral-800/80 transition ${selected ? "bg-neutral-800 text-blue-300" : ""}`} onClick={onClick}>
+      <span className="text-xl">{icon}</span>
+      <span>{label}</span>
+      <span className="flex-1" />
+      {(label === "Theme" || label === "Help") && (
+        <svg width={22} height={22} className={`inline ml-2 rotate-90 transition-transform ${selected ? "rotate-0" : ""}`}>
+          <polyline points="9 7 13 11 9 15" fill="none" stroke="currentColor" strokeWidth={2.2} />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 export default function SentinelDashboardPage() {
-  // --- Sidebar state, theme state ---
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [dark, setDark] = useState(() => !!getLS(DARK_KEY, true));
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsAnchor, setSettingsAnchor] = useState<HTMLElement | null>(null);
+
   useEffect(() => {
     document.documentElement.classList.toggle("dark", Boolean(dark));
     setLS(DARK_KEY, dark);
   }, [dark]);
-  // --- Team and cases ---
   const [team, setTeam] = useState<TeamMember[]>(() => getLS(TEAM_KEY, seedTeam));
   useEffect(() => setLS(TEAM_KEY, team), [team]);
   const [cases, setCases] = useState<CaseItem[]>(() => getLS(CASES_KEY, seedCases));
-  const [slno, setSlno] = useState(() => cases.length ? Math.max(...cases.map(c => c.slno)) + 1 : 3);
+  const [slno, setSlno] = useState(() => cases.length ? Math.max(...cases.map(c => c.slno)) + 1 : seedCases.length + 1);
   useEffect(() => setLS(CASES_KEY, cases), [cases]);
   useEffect(() => {
     const id = setInterval(() => {
@@ -344,34 +395,28 @@ export default function SentinelDashboardPage() {
   const [teamModal, setTeamModal] = useState(false);
   const [assignShow, setAssignShow] = useState<string | null>(null);
 
-  function teamOpen() { setTeamModal(true); }
-  function settingsOpen() {
-    window.alert("Redirect to settings/help (combined)");
-  }
-
-  // Case actions as before
-  function handleAssign(caseId: string, ass: Assignment) {
-    setCases(prev => prev.map(c => c.id !== caseId ? c : { ...c, assignments: [...c.assignments, ass] }));
-  }
-  function handleStatus(caseId: string, status: CaseStatus) {
-    setCases(prev => prev.map(c => c.id !== caseId ? c : { ...c, status }));
-  }
-  function handleReport(caseId: string, files: FileList | null) {
-    if (!files || !files[0]) return;
-    setCases(prev => prev.map(c => c.id !== caseId ? c : { ...c, reportFile: files[0].name }));
-  }
+  const handleOpenSettings = (anchor: HTMLElement | null) => {
+    setSettingsAnchor(anchor);
+    setSettingsOpen(true);
+  };
 
   return (
     <div className="flex min-h-screen bg-neutral-100 dark:bg-neutral-950 font-sans">
       <Sidebar
         expanded={sidebarExpanded}
         onExpand={() => setSidebarExpanded(e => !e)}
-        onTeam={teamOpen}
-        onSettings={settingsOpen}
+        onTeam={() => setTeamModal(true)}
+        onOpenSettings={handleOpenSettings}
         dark={dark}
         setDark={setDark}
       />
-      {/* Main Content */}
+      <SettingsHelpPopover
+        open={settingsOpen}
+        anchorRef={settingsAnchor}
+        onClose={() => setSettingsOpen(false)}
+        dark={dark}
+        setDark={setDark}
+      />
       <div className={`flex-1 min-h-screen transition-all ease-in ${sidebarExpanded ? "pl-56" : "pl-20 sm:pl-24"}`}>
         <main className="flex flex-col items-center flex-1 py-12 px-2 sm:px-8 w-full relative transition-all ease-in">
           <div className="w-full max-w-6xl">
@@ -402,7 +447,6 @@ export default function SentinelDashboardPage() {
                       </td>
                       <td className="py-2 px-2 align-top text-center relative">
                         <div className="flex flex-col gap-1 sm:flex-row sm:gap-2 items-center justify-center">
-                          {/* Assign Officers */}
                           <div className="relative inline-block">
                             <button className="px-3 py-1 text-xs rounded bg-blue-700 hover:bg-blue-800 text-white shadow font-bold" aria-label="Assign officers" onClick={() => setAssignShow(c.id)}>Assign Officers</button>
                             {assignShow === c.id && (
@@ -410,25 +454,26 @@ export default function SentinelDashboardPage() {
                                 key={c.id}
                                 team={team}
                                 caseItem={c}
-                                onAssign={ass => handleAssign(c.id, ass)}
+                                onAssign={ass => setCases(prev => prev.map(ca => ca.id !== c.id ? ca : { ...ca, assignments: [...ca.assignments, ass] }))}
                                 onHide={() => setAssignShow(null)}
                               />
                             )}
                           </div>
-                          {/* Status */}
                           <select aria-label="Update Action"
                             className="px-3 py-1 text-xs rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-semibold"
                             value={c.status}
-                            onChange={e => handleStatus(c.id, e.target.value as CaseStatus)}
+                            onChange={e => setCases(prev => prev.map(ca => ca.id !== c.id ? ca : { ...ca, status: e.target.value as CaseStatus }))}
                           >
                             <option>Queued</option>
                             <option>Verified</option>
                             <option>Re-Verification</option>
                             <option>Under-Review</option>
                           </select>
-                          {/* Upload */}
                           <label className="px-3 py-1 bg-neutral-300 dark:bg-neutral-800 rounded text-xs font-semibold cursor-pointer text-neutral-800 dark:text-neutral-100">
-                            <input hidden type="file" aria-label="Upload report" onChange={e => handleReport(c.id, e.target.files)} />
+                            <input hidden type="file" aria-label="Upload report" onChange={e => {
+                              if (!e.target.files || !e.target.files[0]) return;
+                              setCases(prev => prev.map(ca => ca.id !== c.id ? ca : { ...ca, reportFile: e.target.files![0].name }));
+                            }} />
                             {c.reportFile ? <span className="inline-flex items-center gap-1">📄<span className="truncate">{c.reportFile}</span></span> : "Submit Report"}
                           </label>
                         </div>
@@ -450,13 +495,3 @@ export default function SentinelDashboardPage() {
     </div>
   );
 }
-
-/**
- * Gemini-inspired:
- * - Collapsible sidebar w/ hamburger, blue square logo, "SENTINEL", always all icons.
- * - On expand, labels appear; on collapse, just icons.
- * - Dark/light toggle always at bottom with correct accessibility.
- * - Settings/help single gear icon, one action.
- * - All contrast/focus correct in both modes.
- * - Main dashboard unchanged.
- */
