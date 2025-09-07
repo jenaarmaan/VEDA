@@ -127,7 +127,7 @@ function DashboardSidebarContent() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem className="flex flex-col items-start">
-            <SidebarMenuButton onClick={() => setShowRecent(!showRecent)} isActive={view === 'recent'} className="w-full">
+             <SidebarMenuButton onClick={() => setShowRecent(!showRecent)} isActive={view === 'recent'} className="w-full">
               <History />
               Recent
             </SidebarMenuButton>
@@ -264,46 +264,49 @@ export default function GeneralUserDashboard() {
       case 'chat':
       default:
         return (
-          <div className="w-full max-w-4xl flex flex-col items-center justify-center flex-grow">
-            {!analysisResult && (
-              <div className="text-center">
-                <h1 className="text-5xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-4">
-                  Namaste, Welcome to VEDA
-                </h1>
-                <p className="text-lg text-muted-foreground">Your personal assistant for verified information</p>
-              </div>
-            )}
-            {analysisResult && (
-              <div className="w-full mb-8 space-y-4">
-                 <Card className="bg-card/80">
-                    <CardHeader className="flex flex-row justify-between items-center">
-                        <CardTitle>Verification Result</CardTitle>
-                        {getVerdictBadge(analysisResult.verdict)}
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <h3 className="font-semibold mb-1">Explanation</h3>
-                            <p className="text-sm text-muted-foreground">{analysisResult.justification}</p>
-                        </div>
-                         <div>
-                            <h3 className="font-semibold mb-1">Sources</h3>
-                            <ul className="list-disc pl-5 text-sm">
-                                {analysisResult.sources.map((src, i) => <li key={i}><a href={src} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{src}</a></li>)}
-                            </ul>
-                        </div>
-                        <div className="flex items-center gap-2 pt-4 border-t border-border">
-                           <Button variant="ghost" size="icon"><ThumbsUp className="h-4 w-4" /></Button>
-                           <Button variant="ghost" size="icon"><ThumbsDown className="h-4 w-4" /></Button>
-                           <Button variant="ghost" size="icon"><RefreshCw className="h-4 w-4" /></Button>
-                           <Button variant="ghost" size="icon" onClick={() => analysisResult.verdict === 'Fake' && handleShareAndReport(analysisResult)}><Share2 className="h-4 w-4" /></Button>
-                           <Button variant="ghost" size="icon"><Copy className="h-4 w-4" /></Button>
-                           <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
-                        </div>
-                    </CardContent>
-                 </Card>
-              </div>
-            )}
-             <div className="w-full mt-auto">
+          <div className="w-full max-w-4xl mx-auto flex flex-col items-center flex-1 h-full">
+            <div className="flex-grow w-full flex flex-col items-center justify-center">
+              {!analysisResult && (
+                <div className="text-center">
+                  <h1 className="text-5xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-4">
+                    Namaste, Welcome to VEDA
+                  </h1>
+                  <p className="text-lg text-muted-foreground">Your personal assistant for verified information</p>
+                </div>
+              )}
+              {analysisResult && (
+                <div className="w-full mb-8 space-y-4">
+                   <Card className="bg-card/80">
+                      <CardHeader className="flex flex-row justify-between items-center">
+                          <CardTitle>Verification Result</CardTitle>
+                          {getVerdictBadge(analysisResult.verdict)}
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                          <div>
+                              <h3 className="font-semibold mb-1">Explanation</h3>
+                              <p className="text-sm text-muted-foreground">{analysisResult.justification}</p>
+                          </div>
+                           <div>
+                              <h3 className="font-semibold mb-1">Sources</h3>
+                              <ul className="list-disc pl-5 text-sm">
+                                  {analysisResult.sources.map((src, i) => <li key={i}><a href={src} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{src}</a></li>)}
+                              </ul>
+                          </div>
+                          <div className="flex items-center gap-2 pt-4 border-t border-border">
+                             <Button variant="ghost" size="icon"><ThumbsUp className="h-4 w-4" /></Button>
+                             <Button variant="ghost" size="icon"><ThumbsDown className="h-4 w-4" /></Button>
+                             <Button variant="ghost" size="icon"><RefreshCw className="h-4 w-4" /></Button>
+                             <Button variant="ghost" size="icon" onClick={() => analysisResult.verdict === 'Fake' && handleShareAndReport(analysisResult)}><Share2 className="h-4 w-4" /></Button>
+                             <Button variant="ghost" size="icon"><Copy className="h-4 w-4" /></Button>
+                             <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                          </div>
+                      </CardContent>
+                   </Card>
+                </div>
+              )}
+            </div>
+
+             <div className="w-full mt-auto mb-4">
                 <div className="w-full max-w-4xl mx-auto px-4 py-2 bg-[#1e1f20] rounded-full flex items-center gap-2 border border-gray-700 focus-within:ring-2 focus-within:ring-primary transition-shadow">
                     <Button variant="ghost" size="icon" className="text-gray-400 hover:bg-gray-700 rounded-full">
                         <Plus />
@@ -328,7 +331,7 @@ export default function GeneralUserDashboard() {
                 </p>
              </div>
              { !analysisResult && 
-                <div className="w-full max-w-5xl mx-auto mt-16">
+                <div className="w-full max-w-5xl mx-auto mt-8">
                     <h2 className="text-2xl font-bold text-center mb-6">Spotlight</h2>
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {spotlightNews.map((item, index) => <SpotlightCard key={index} item={item} />)}
@@ -343,13 +346,13 @@ export default function GeneralUserDashboard() {
   return (
     <SidebarProvider>
       <DashboardViewContext.Provider value={{ view, setView }}>
-        <div className="flex min-h-screen bg-[#131314] text-gray-200">
+        <div className="flex h-screen bg-[#131314] text-gray-200 overflow-hidden">
           <Sidebar>
             <DashboardSidebarContent />
           </Sidebar>
 
-          <main className="flex-1 flex flex-col h-screen">
-            <div className="flex-grow flex flex-col items-center justify-center p-6 overflow-y-auto">
+          <main className="flex-1 flex flex-col">
+            <div className="flex-1 p-6 overflow-y-auto">
               {renderMainContent()}
             </div>
           </main>
