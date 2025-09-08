@@ -280,6 +280,21 @@ function AssignDropdown({ caseItem, team, onAssign, onHide }: { caseItem: CaseIt
   );
 }
 
+function MenuButton({ icon, label, onClick, selected = false }: { icon: React.ReactNode; label: string; onClick: () => void; selected?: boolean }) {
+  return (
+    <button className={`flex items-center w-full text-left px-3 py-2 gap-3 rounded text-md hover:bg-neutral-800/80 transition ${selected ? "bg-neutral-800 text-blue-300" : ""}`} onClick={onClick}>
+      <span className="text-xl">{icon}</span>
+      <span>{label}</span>
+      <span className="flex-1" />
+      {(label === "Theme" || label === "Help") && (
+        <svg width={22} height={22} className={`inline ml-2 rotate-90 transition-transform ${selected ? "rotate-0" : ""}`}>
+          <polyline points="9 7 13 11 9 15" fill="none" stroke="currentColor" strokeWidth={2.2} />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 function SettingsHelpPopover({
   open, anchorRef, onClose, dark, setDark
 }: {
@@ -341,27 +356,10 @@ function SettingsHelpPopover({
     </div>
   );
 }
-function MenuButton({ icon, label, onClick, selected = false }: { icon: React.ReactNode; label: string; onClick: () => void; selected?: boolean }) {
-  return (
-    <button className={`flex items-center w-full text-left px-3 py-2 gap-3 rounded text-md hover:bg-neutral-800/80 transition ${selected ? "bg-neutral-800 text-blue-300" : ""}`} onClick={onClick}>
-      <span className="text-xl">{icon}</span>
-      <span>{label}</span>
-      <span className="flex-1" />
-      {(label === "Theme" || label === "Help") && (
-        <svg width={22} height={22} className={`inline ml-2 rotate-90 transition-transform ${selected ? "rotate-0" : ""}`}>
-          <polyline points="9 7 13 11 9 15" fill="none" stroke="currentColor" strokeWidth={2.2} />
-        </svg>
-      )}
-    </button>
-  );
-}
 
 export default function SentinelDashboardPage() {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [dark, setDark] = useState(() => !!getLS(DARK_KEY, true));
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsAnchor, setSettingsAnchor] = useState<HTMLElement | null>(null);
-
   useEffect(() => {
     document.documentElement.classList.toggle("dark", Boolean(dark));
     setLS(DARK_KEY, dark);
@@ -395,10 +393,17 @@ export default function SentinelDashboardPage() {
   const [teamModal, setTeamModal] = useState(false);
   const [assignShow, setAssignShow] = useState<string | null>(null);
 
-  const handleOpenSettings = (anchor: HTMLElement | null) => {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsAnchor, setSettingsAnchor] = useState<HTMLElement | null>(null);
+  function openSettings(anchor: HTMLElement | null) {
     setSettingsAnchor(anchor);
     setSettingsOpen(true);
-  };
+  }
+
+  function closeSettings() {
+    setSettingsOpen(false);
+    setTimeout(() => setSettingsAnchor(null), 200);
+  }
 
   return (
     <div className="flex min-h-screen bg-neutral-100 dark:bg-neutral-950 font-sans">
@@ -406,14 +411,14 @@ export default function SentinelDashboardPage() {
         expanded={sidebarExpanded}
         onExpand={() => setSidebarExpanded(e => !e)}
         onTeam={() => setTeamModal(true)}
-        onOpenSettings={handleOpenSettings}
+        onOpenSettings={openSettings}
         dark={dark}
         setDark={setDark}
       />
       <SettingsHelpPopover
         open={settingsOpen}
         anchorRef={settingsAnchor}
-        onClose={() => setSettingsOpen(false)}
+        onClose={closeSettings}
         dark={dark}
         setDark={setDark}
       />
