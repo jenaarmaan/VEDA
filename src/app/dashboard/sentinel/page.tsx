@@ -400,11 +400,6 @@ export default function SentinelDashboardPage() {
     setSettingsOpen(true);
   }
 
-  function closeSettings() {
-    setSettingsOpen(false);
-    setTimeout(() => setSettingsAnchor(null), 200);
-  }
-
   return (
     <div className="flex min-h-screen bg-neutral-100 dark:bg-neutral-950 font-sans">
       <Sidebar
@@ -418,7 +413,7 @@ export default function SentinelDashboardPage() {
       <SettingsHelpPopover
         open={settingsOpen}
         anchorRef={settingsAnchor}
-        onClose={closeSettings}
+        onClose={() => setSettingsOpen(false)}
         dark={dark}
         setDark={setDark}
       />
