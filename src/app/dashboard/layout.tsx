@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
@@ -27,7 +28,7 @@ export default function DashboardLayout({
     const dashboardRoutes: { [key: string]: string } = {
         'civic': '/dashboard/user',
         'sentinel': '/dashboard/sentinel',
-        'ground-sentinel': '/dashboard/ground-sentinel',
+        'ground_sentinel': '/dashboard/ground-sentinel',
         'council': '/dashboard/council',
         'state-officer': '/dashboard/state-officer',
         'govt-admin': '/dashboard/govt-admin',
