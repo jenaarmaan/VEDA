@@ -1,127 +1,125 @@
 
 'use client';
+import React, { useState, useEffect } from 'react';
 
-import { useState } from 'react';
-import { Sidebar, SidebarProvider, SidebarHeader, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Activity, AlertTriangle, Settings, Mic, ArrowUp, User } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
-import { useAuth } from '@/context/AuthContext';
-import { ArrowUpIcon } from '@/components/icons/ArrowUpIcon';
+// Sample data structure for cases assigned to a Ground Sentinel
+type Case = {
+  id: string;
+  subject: string;
+  assigner: string;
+  status: 'Queued' | 'Verified' | 'Re-verification' | 'Under-review';
+};
 
-
-const dataCards = [
-    { title: 'Active Alerts', value: '12', description: 'High-priority threats detected', icon: <AlertTriangle className="text-red-500" /> },
-    { title: 'Reports Investigated', value: '78', description: 'Last 24 hours', icon: <LayoutDashboard className="text-blue-400" /> },
-    { title: 'Live Field Agents', value: '4', description: 'Currently on-duty', icon: <Activity className="text-green-500" /> },
+// Sample data - in a real app, this would be fetched from Firestore
+const initialCases: Case[] = [
+  {
+    id: 'CASE001',
+    subject: 'Noise Complaint at Sector 17',
+    assigner: 'sentinel1@agency.com',
+    status: 'Queued',
+  },
+  {
+    id: 'CASE002',
+    subject: 'Unauthorized Construction Detected',
+    assigner: 'sentinel2@agency.com',
+    status: 'Verified',
+  },
 ];
 
+const STATUS_OPTIONS: Case['status'][] = ['Queued', 'Verified', 'Re-verification', 'Under-review'];
+
 export default function GroundSentinelDashboard() {
-  const { user } = useAuth();
-  const [activeView, setActiveView] = useState('dashboard');
-  
+  const [cases, setCases] = useState<Case[]>(initialCases);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const handleStatusChange = (caseId: string, newStatus: Case['status']) => {
+    setCases(prevCases =>
+      prevCases.map(c => (c.id === caseId ? { ...c, status: newStatus } : c))
+    );
+  };
+
+  const handleUploadReport = (caseId: string) => {
+    // Mock function: In a real app, this would trigger a file upload modal or logic
+    alert(`Upload report for Case ID: ${caseId}`);
+  };
+
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen bg-[#0a0a0a] text-gray-200">
-        <Sidebar>
-          <SidebarHeader>
-             {/* Collapsed view will just be an icon */}
-          </SidebarHeader>
-          <SidebarContent className="p-2">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => setActiveView('dashboard')} isActive={activeView === 'dashboard'} tooltip="Dashboard">
-                    <LayoutDashboard />
-                    <span className="group-data-[state=expanded]:inline hidden">Dashboard</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => setActiveView('activity')} isActive={activeView === 'activity'} tooltip="Live Activity">
-                    <Activity />
-                     <span className="group-data-[state=expanded]:inline hidden">Live Activity</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => setActiveView('alerts')} isActive={activeView === 'alerts'} tooltip="Alerts">
-                    <AlertTriangle />
-                     <span className="group-data-[state=expanded]:inline hidden">Alerts</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarContent>
-          <SidebarFooter>
-            <SidebarMenu>
-                <SidebarMenuItem>
-                    <SidebarMenuButton tooltip="Settings">
-                        <Settings />
-                        <span className="group-data-[state=expanded]:inline hidden">Settings</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarFooter>
-        </Sidebar>
+    <div className="flex h-screen bg-background text-foreground">
+      {/* Sidebar */}
+      <aside
+        className={`flex flex-col bg-card text-card-foreground border-r border-border transition-all duration-300 ${
+          sidebarOpen ? 'w-64' : 'w-20'
+        }`}
+      >
+        <div className="flex items-center justify-between h-16 p-4 border-b border-border">
+          <h1 className={`font-bold text-xl ${!sidebarOpen && 'hidden'}`}>G. Sentinel</h1>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 rounded-md hover:bg-accent">
+            {/* Simple Menu Icon */}
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+        <nav className="flex-1 p-4 space-y-2">
+           <a href="#" className="flex items-center p-2 space-x-3 rounded-md bg-primary text-primary-foreground">
+             <span className="font-semibold">⏳</span>
+             <span className={`${!sidebarOpen && 'hidden'}`}>Case History</span>
+           </a>
+           <a href="#" className="flex items-center p-2 space-x-3 rounded-md hover:bg-accent">
+             <span className="font-semibold">⚙️</span>
+             <span className={`${!sidebarOpen && 'hidden'}`}>Settings</span>
+           </a>
+        </nav>
+      </aside>
 
-        <main className="flex-1 flex flex-col h-screen">
-          <header className="flex items-center justify-between p-4 border-b border-gray-800">
-            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500">
-              Ground Sentinel Dashboard
-            </h1>
-            <Avatar>
-                <AvatarImage src={`https://i.pravatar.cc/150?u=${user?.uid}`} alt={user?.details.fullName} />
-                <AvatarFallback>{user?.details.fullName?.[0]}</AvatarFallback>
-            </Avatar>
-          </header>
-          
-          <div className="flex-grow p-6 overflow-y-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-               {dataCards.map((card, index) => (
-                    <Card key={index} className="bg-[#131314] border-gray-800 shadow-lg hover:shadow-blue-500/20 transition-shadow duration-300 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 h-1 w-1/3 bg-gradient-to-r from-purple-500 to-blue-500 animate-pulse"></div>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-gray-300">{card.title}</CardTitle>
-                            {card.icon}
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-4xl font-bold text-gray-50">{card.value}</div>
-                            <p className="text-xs text-gray-500">{card.description}</p>
-                        </CardContent>
-                    </Card>
-               ))}
-            </div>
-             {/* Placeholder for more content */}
-             <div className="mt-8">
-                <Card className="bg-[#131314] border-gray-800">
-                    <CardHeader>
-                        <CardTitle>Recent Activity Log</CardTitle>
-                        <CardDescription>Stream of recent on-ground events.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {/* Activity items would go here */}
-                        <p className="text-gray-400">No recent activity.</p>
-                    </CardContent>
-                </Card>
-             </div>
-          </div>
-
-          <div className="px-4 pb-4">
-             <div className="w-full max-w-4xl mx-auto px-4 py-2 bg-[#1e1f20] rounded-full flex items-center gap-2 border border-gray-700 focus-within:border-blue-500 transition-colors">
-                <Button variant="ghost" size="icon" className="text-gray-400 hover:bg-gray-700 rounded-full">
-                    <Mic />
-                </Button>
-                <Input 
-                    placeholder="Ask Sentinel..." 
-                    className="flex-1 bg-transparent border-none text-lg text-gray-200 placeholder-gray-500 focus:ring-0 focus:outline-none"
-                />
-                <Button size="icon" className="bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-full shadow-lg hover:shadow-blue-500/50 transition-shadow">
-                    <ArrowUpIcon />
-                </Button>
-            </div>
-          </div>
-
-        </main>
-      </div>
-    </SidebarProvider>
+      {/* Main Content */}
+      <main className="flex-1 p-8 overflow-y-auto">
+        <header className="mb-8">
+          <h2 className="text-3xl font-bold">Case Dashboard</h2>
+          <p className="text-muted-foreground">Manage your assigned verification tasks.</p>
+        </header>
+        
+        <div className="bg-card p-6 rounded-lg shadow-sm">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="p-4">Case ID</th>
+                <th className="p-4">Subject</th>
+                <th className="p-4">Assigned By</th>
+                <th className="p-4">Status</th>
+                <th className="p-4 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cases.map((caseItem) => (
+                <tr key={caseItem.id} className="border-b border-border hover:bg-accent/50">
+                  <td className="p-4 font-mono text-sm">{caseItem.id}</td>
+                  <td className="p-4">{caseItem.subject}</td>
+                  <td className="p-4 text-muted-foreground">{caseItem.assigner}</td>
+                  <td className="p-4">
+                    <select
+                      value={caseItem.status}
+                      onChange={(e) => handleStatusChange(caseItem.id, e.target.value as Case['status'])}
+                      className="bg-input border border-border rounded-md px-3 py-1.5 text-sm"
+                    >
+                      {STATUS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt.replace('-', ' ')}</option>)}
+                    </select>
+                  </td>
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() => handleUploadReport(caseItem.id)}
+                      className="bg-primary text-primary-foreground px-4 py-1.5 rounded-md text-sm font-semibold hover:bg-primary/90"
+                    >
+                      Upload Report
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {cases.length === 0 && <p className="text-center p-8 text-muted-foreground">No cases assigned.</p>}
+        </div>
+      </main>
+    </div>
   );
 }
