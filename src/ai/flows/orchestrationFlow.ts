@@ -6,7 +6,7 @@ import { generateOversightReport } from './monitoringAgent';
 
 const caseManager = new CaseManager();
 
-export async function runVedaWorkflow(userInput: { type: string; data: string }, userName: string) {
+export async function runVedaWorkflow(userInput: { type: "text" | "image" | "voice" | "url"; data: string }, userName: string) {
   // Step 1: Handle user input (multi-modal)
   const inputResult = await handleUserInput(userInput);
 
