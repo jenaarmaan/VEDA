@@ -18,4 +18,5 @@ export async function verifyContent(content: string) {
       explanation: "This is a placeholder verdict for demo purposes."
     };
   }
+
   

@@ -1,6 +1,5 @@
 // Handles multi-modal user inputs for VEDA
 import { analyzeContent } from './analyzeContentFlow';
-import { verifyContent } from './verificationAgent';
 
 export async function handleUserInput(input: {
   type: "text" | "voice" | "image" | "url";
@@ -18,14 +17,12 @@ export async function handleUserInput(input: {
   }
   
   // Analyze and verify content
-  const contentAnalysis = await analyzeContent({ contentType: 'text', contentData: normalizedText });
-  const verification = await verifyContent(normalizedText);
+  const analysisResult = await analyzeContent({ contentType: 'text', contentData: normalizedText });
 
   return {
     original: input,
     normalizedText,
-    analysis: contentAnalysis,
-    verification,
+    analysis: analysisResult,
   };
 }
 
