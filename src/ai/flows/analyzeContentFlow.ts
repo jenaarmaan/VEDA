@@ -79,12 +79,23 @@ const analyzeContentFlow = ai.defineFlow(
     outputSchema: AnalyzeContentOutputSchema,
   },
   async (input) => {
-    const response = await prompt(input);
-    const output = response.output;
-    if (!output) {
-        throw new Error("AI analysis failed to produce a valid output.");
-    }
-    return output;
+    // const response = await prompt(input);
+    // const output = response.output;
+    // if (!output) {
+    //     throw new Error("AI analysis failed to produce a valid output.");
+    // }
+    // return output;
+    
+    // Return dummy data
+    return {
+      status: "False",
+      confidence: 0,
+      explanation: "This news was fact-checked by East Burdwan Police and reported by mainstream outlets (Times of India, Millennium Post). The viral claim that SSC candidates were forced to remove their iron bangle (noa) was proven false. The candidate was allowed to write the exam with the bangle. Police concluded the viral content was politically motivated and misleading.",
+      draftEmail": {
+          "subject": "Fact-check report from VEDA",
+          "body": "Dear Sir/Madam,\\n\\nI would like to report misinformation circulating online regarding SSC candidates allegedly being forced to remove their iron bangle (noa). After verifying with East Burdwan Police and mainstream outlets, this claim is proven false and politically motivated.\\n\\nKindly take appropriate steps to counter this misinformation.\\n\\nThank you,\\n[Your Name]"
+      }
+    };
   }
 );
 
