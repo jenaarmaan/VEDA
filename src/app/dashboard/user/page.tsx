@@ -23,6 +23,7 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
+  Mail,
 } from 'lucide-react';
 import Spinner from '@/components/shared/Spinner';
 import { Input } from '@/components/ui/input';
@@ -245,6 +246,17 @@ function SimulatedChatView({ messages, onNewQuery }: { messages: ChatMessage[], 
                                    <Button variant="ghost" size="icon"><ThumbsDown className="h-4 w-4" /></Button>
                                    <Button variant="ghost" size="icon"><Share2 className="h-4 w-4" /></Button>
                                    <Button variant="ghost" size="icon"><Copy className="h-4 w-4" /></Button>
+                                   <a
+                                    href={`mailto:veda.agencyhead@gmail.com?subject=${encodeURIComponent(
+                                      (msg.content as AnalyzeContentOutput).draftEmail.subject
+                                    )}&body=${encodeURIComponent(
+                                      (msg.content as AnalyzeContentOutput).draftEmail.body
+                                    )}`}
+                                  >
+                                    <Button variant="ghost" size="icon">
+                                      <Mail className="h-4 w-4" />
+                                    </Button>
+                                  </a>
                                    <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                                 </div>
                             </CardContent>
