@@ -19,6 +19,7 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
+  Mail,
 } from 'lucide-react';
 import Spinner from '@/components/shared/Spinner';
 import { Input } from '@/components/ui/input';
@@ -43,7 +44,7 @@ import { doc, onSnapshot, updateDoc, arrayUnion, collection, query, orderBy } fr
 import { db } from '@/lib/firebase';
 import type { VerificationHistory } from '@/lib/types';
 import Link from 'next/link';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 type View = 'chat' | 'learn' | 'recent';
 
@@ -140,9 +141,8 @@ function DashboardSidebarContent() {
   }
 
 
-export default function ChatPage() {
-  const params = useParams();
-  const chatId = params?.chatId as string;
+export default function ChatPage({ params }: { params: { chatId: string } }) {
+  const chatId = params.chatId;
   const { user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -271,6 +271,7 @@ export default function ChatPage() {
                                    <Button variant="ghost" size="icon"><ThumbsDown className="h-4 w-4" /></Button>
                                    <Button variant="ghost" size="icon"><Share2 className="h-4 w-4" /></Button>
                                    <Button variant="ghost" size="icon"><Copy className="h-4 w-4" /></Button>
+                                   <Button variant="ghost" size="icon"><Mail className="h-4 w-4" /></Button>
                                    <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                                 </div>
                             </CardContent>
