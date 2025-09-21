@@ -14,6 +14,7 @@ export interface AnalyzeContentOutput {
   status: 'Verified' | 'Questionable' | 'False' | 'Unverified';
   confidence: number;
   explanation: string;
+  sources: string[];
   draftEmail: {
     subject: string;
     body: string;

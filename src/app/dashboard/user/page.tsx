@@ -68,23 +68,28 @@ const generateRandomResponse = (): AnalyzeContentOutput => {
 
   switch (randomVerdict) {
     case 'Verified':
-      explanation = `The claims have been corroborated by multiple reliable sources, including mainstream news outlets and official statements. Cross-verification confirms the sequence of events and reported facts. Analysis shows no signs of manipulation.`;
+      explanation = `This claim is accurate. It has been corroborated by multiple reliable sources, including mainstream news outlets and official statements. Cross-verification confirms the sequence of events and reported facts. Analysis shows no signs of manipulation or false information.`;
       break;
     case 'False':
-      explanation = `This claim was fact-checked and proven false by multiple independent organizations. The original source was found to be a satirical website, and the information was taken out of context. Official sources have directly refuted this claim.`;
+      explanation = `This claim is false. It was fact-checked and proven incorrect by multiple independent organizations. The original source was found to be unreliable, and the information was taken out of context to mislead. Official sources have directly refuted this claim.`;
       break;
     case 'Questionable':
-      explanation = `The content contains a mix of accurate and unverified information, making it potentially misleading. While some facts are correct, the overall narrative is biased and lacks credible sources for its main claims. Caution is advised.`;
+      explanation = `This content is questionable. It contains a mix of accurate and unverified information, making it potentially misleading. While some facts are correct, the overall narrative is biased and lacks credible sources for its main claims. Caution is advised when interpreting this information.`;
       break;
     case 'Unverified':
-      explanation = `There is insufficient credible evidence to either confirm or deny the claims made in this content. The story originates from a single, uncorroborated source with no history of reliable reporting. More information is needed for a conclusive verdict.`;
+      explanation = `This claim is unverified. There is insufficient credible evidence to either confirm or deny the claims made in this content. The story originates from a single, uncorroborated source with no history of reliable reporting, and more information is needed for a conclusive verdict.`;
       break;
   }
+
+  const allSources = ["Facebook", "Times of India", "Local News Blog", "WhatsApp Forward", "Twitter (X)", "YouTube", "Instagram"];
+  const numSources = Math.floor(Math.random() * 3) + 2; // 2 to 4 sources
+  const sources = [...allSources].sort(() => 0.5 - Math.random()).slice(0, numSources);
   
   return {
       status: randomVerdict,
       confidence: randomConfidence,
       explanation: explanation,
+      sources: sources,
       draftEmail: {
           subject: "Fact-check report from VEDA",
           body: `Dear Sir/Madam,\n\nWe are writing to report potentially misleading information circulating online regarding ${contentDescription}. Our analysis indicates the content is ${randomVerdict.toLowerCase()}.\n\n${explanation}\n\nWe request that you review this matter and take appropriate action.\n\nThank you,\nVEDA Fact-Checking Team`
@@ -234,6 +239,16 @@ function SimulatedChatView({ messages, onNewQuery }: { messages: ChatMessage[], 
                                     <h3 className="font-semibold mb-1">Explanation</h3>
                                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">{(msg.content as AnalyzeContentOutput).explanation}</p>
                                 </div>
+
+                                <div>
+                                    <h3 className="font-semibold mb-1">Source Forensics</h3>
+                                    <div className="text-sm text-muted-foreground p-3 bg-muted rounded-md space-y-1">
+                                      {(msg.content as AnalyzeContentOutput).sources.map((source, i) => (
+                                        <p key={i}>- Traced on: {source}</p>
+                                      ))}
+                                    </div>
+                                </div>
+                                
                                 <div className="flex items-center gap-2 pt-4 border-t border-border">
                                    <Button variant="ghost" size="icon"><ThumbsUp className="h-4 w-4" /></Button>
                                    <Button variant="ghost" size="icon"><ThumbsDown className="h-4 w-4" /></Button>
