@@ -44,7 +44,13 @@ import { doc, onSnapshot, updateDoc, arrayUnion, collection, query, orderBy } fr
 import { db } from '@/lib/firebase';
 import type { VerificationHistory } from '@/lib/types';
 import Link from 'next/link';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+
+interface ChatPageProps {
+  params: {
+    chatId: string;
+  };
+}
 
 type View = 'chat' | 'learn' | 'recent';
 
@@ -141,9 +147,8 @@ function DashboardSidebarContent() {
   }
 
 
-export default function ChatPage() {
-  const params = useParams();
-  const chatId = params?.chatId as string;
+export default function ChatPage({ params }: ChatPageProps) {
+  const chatId = params?.chatId;
   const { user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
