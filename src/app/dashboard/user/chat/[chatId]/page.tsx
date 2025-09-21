@@ -43,7 +43,7 @@ import { doc, onSnapshot, updateDoc, arrayUnion, collection, query, orderBy } fr
 import { db } from '@/lib/firebase';
 import type { VerificationHistory } from '@/lib/types';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 type View = 'chat' | 'learn' | 'recent';
 
@@ -140,8 +140,9 @@ function DashboardSidebarContent() {
   }
 
 
-export default function ChatPage({ params }: { params: { chatId: string } }) {
-  const { chatId } = params;
+export default function ChatPage() {
+  const params = useParams();
+  const chatId = params?.chatId as string;
   const { user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
@@ -180,7 +181,7 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
   }, [user, chatId, router, toast]);
 
   const handleSendMessage = async (content: string) => {
-      if (!content.trim() || !user) return;
+      if (!content.trim() || !user || !chatId) return;
       
       setIsLoading(true);
       setInputValue('');
