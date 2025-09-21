@@ -247,7 +247,7 @@ function SimulatedChatView({ messages, onNewQuery }: { messages: ChatMessage[], 
                                    <Button variant="ghost" size="icon"><Share2 className="h-4 w-4" /></Button>
                                    <Button variant="ghost" size="icon"><Copy className="h-4 w-4" /></Button>
                                    <a
-                                    href={`mailto:veda.agencyhead@gmail.com?subject=${encodeURIComponent(
+                                    href={`mailto:veda.agencyhead@gmail.com?cc=${encodeURIComponent('veda.govt@gmail.com,contact.vedaofficial@gmail.com')}&subject=${encodeURIComponent(
                                       (msg.content as AnalyzeContentOutput).draftEmail.subject
                                     )}&body=${encodeURIComponent(
                                       (msg.content as AnalyzeContentOutput).draftEmail.body
