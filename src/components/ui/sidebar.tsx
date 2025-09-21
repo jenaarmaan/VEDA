@@ -303,10 +303,12 @@ const SidebarMenuButton = React.forwardRef<
     const Comp = asChild ? Slot : "button"
     const { isMobile, state } = useSidebar()
     
+    const childNodes = asChild ? React.Children.toArray((children as React.ReactElement).props.children) : React.Children.toArray(children);
+
     const buttonContent = (
       // Use a div instead of React.Fragment to accept props
       <div className="flex w-full items-center gap-2 overflow-hidden whitespace-nowrap">
-        {React.Children.map(children, (child, i) => {
+        {childNodes.map((child, i) => {
           if (React.isValidElement(child) && i === 0) { // Icon
             return React.cloneElement(child, {
               className: cn(child.props.className, "h-5 w-5 shrink-0"),
@@ -331,7 +333,7 @@ const SidebarMenuButton = React.forwardRef<
         )}
         {...props}
       >
-        {buttonContent}
+        {asChild ? children : buttonContent}
       </Comp>
     )
 
