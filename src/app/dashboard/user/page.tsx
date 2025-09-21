@@ -5,9 +5,9 @@ import React, { useEffect, useState, createContext, useContext } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { SpotlightItem, VerificationHistory, ChatMessage } from '@/lib/types';
+import type { SpotlightItem, VerificationHistory, ChatMessage, AnalyzeContentOutput } from '@/lib/types';
 import {
   Plus,
   Mic,
@@ -15,6 +15,14 @@ import {
   Settings,
   BookOpen,
   History,
+  ThumbsUp,
+  ThumbsDown,
+  Share2,
+  Copy,
+  MoreHorizontal,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import Spinner from '@/components/shared/Spinner';
 import { Input } from '@/components/ui/input';
@@ -29,12 +37,12 @@ import {
   SidebarMenuButton,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import SpotlightCard from '@/components/dashboard/SpotlightCard';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { verifyUrlAndRecord } from '@/ai/flows/orchestrationFlow';
 
 type View = 'chat' | 'learn' | 'recent';
 
@@ -47,6 +55,42 @@ function useDashboardView() {
   }
   return context;
 }
+
+// --- Dummy Response Generator ---
+const generateRandomResponse = (): AnalyzeContentOutput => {
+  const verdicts: AnalyzeContentOutput['status'][] = ['Verified', 'False', 'Questionable', 'Unverified'];
+  const randomVerdict = verdicts[Math.floor(Math.random() * verdicts.length)];
+  const randomConfidence = Math.floor(Math.random() * 40) + 60; // 60-100%
+
+  let explanation = '';
+  let contentDescription = 'the viral claim';
+
+  switch (randomVerdict) {
+    case 'Verified':
+      explanation = `The claims have been corroborated by multiple reliable sources, including mainstream news outlets and official statements. Cross-verification confirms the sequence of events and reported facts. Analysis shows no signs of manipulation.`;
+      break;
+    case 'False':
+      explanation = `This claim was fact-checked and proven false by multiple independent organizations. The original source was found to be a satirical website, and the information was taken out of context. Official sources have directly refuted this claim.`;
+      break;
+    case 'Questionable':
+      explanation = `The content contains a mix of accurate and unverified information, making it potentially misleading. While some facts are correct, the overall narrative is biased and lacks credible sources for its main claims. Caution is advised.`;
+      break;
+    case 'Unverified':
+      explanation = `There is insufficient credible evidence to either confirm or deny the claims made in this content. The story originates from a single, uncorroborated source with no history of reliable reporting. More information is needed for a conclusive verdict.`;
+      break;
+  }
+  
+  return {
+      status: randomVerdict,
+      confidence: randomConfidence,
+      explanation: explanation,
+      draftEmail: {
+          subject: "Fact-check report from VEDA",
+          body: `Dear Sir/Madam,\n\nWe are writing to report potentially misleading information circulating online regarding ${contentDescription}. Our analysis indicates the content is ${randomVerdict.toLowerCase()}.\n\n${explanation}\n\nWe request that you review this matter and take appropriate action.\n\nThank you,\nVEDA Fact-Checking Team`
+      }
+    };
+}
+
 
 function RecentItemsList() {
   const { user } = useAuth();
@@ -145,14 +189,90 @@ function DashboardSidebarContent() {
   );
 }
 
+// --- Chat View Components ---
+const getVerdictBadge = (verdict: AnalyzeContentOutput['status']) => {
+    switch(verdict) {
+      case 'Verified': return <Badge variant="default" className="bg-green-600 hover:bg-green-700"><CheckCircle className="mr-2 h-4 w-4" />Verified</Badge>;
+      case 'False': return <Badge variant="destructive"><XCircle className="mr-2 h-4 w-4" />False</Badge>;
+      case 'Questionable': return <Badge variant="destructive" className="bg-orange-500 hover:bg-orange-600"><AlertTriangle className="mr-2 h-4 w-4" />Questionable</Badge>;
+      default: return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-black"><AlertTriangle className="mr-2 h-4 w-4" />Unverified</Badge>;
+    }
+  };
+
+const isAnalyzeContentOutput = (content: any): content is AnalyzeContentOutput => {
+      return content && typeof content === 'object' && 'status' in content && 'confidence' in content && 'explanation' in content;
+}
+
+function SimulatedChatView({ messages, onNewQuery }: { messages: ChatMessage[], onNewQuery: () => void }) {
+    const chatEndRef = React.useRef<HTMLDivElement>(null);
+    
+    useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    return (
+        <div className="w-full flex-1 max-w-4xl mx-auto space-y-6 overflow-y-auto p-4">
+             {messages.map((msg, index) => (
+                <div key={index}>
+                  {msg.role === 'user' && (
+                    <div className="p-4 bg-card/50 rounded-lg">
+                      <p className="font-semibold mb-2">You:</p>
+                      <p>{msg.content as string}</p>
+                    </div>
+                  )}
+                  {msg.role === 'assistant' && (
+                    <div>
+                      {isAnalyzeContentOutput(msg.content) ? (
+                          <Card className="bg-card/80">
+                            <CardHeader className="flex flex-row justify-between items-center">
+                                <CardTitle>Verification Result</CardTitle>
+                                {getVerdictBadge((msg.content as AnalyzeContentOutput).status)}
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div>
+                                    <h3 className="font-semibold mb-1">Explanation</h3>
+                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{(msg.content as AnalyzeContentOutput).explanation}</p>
+                                </div>
+                                 <div>
+                                    <h3 className="font-semibold mb-2">Draft Email to Authorities:</h3>
+                                     <div className="text-sm text-muted-foreground p-3 bg-muted rounded-md space-y-2">
+                                        <p><strong>Subject:</strong> {(msg.content as AnalyzeContentOutput).draftEmail.subject}</p>
+                                        <p className="whitespace-pre-wrap"><strong>Body:</strong> {(msg.content as AnalyzeContentOutput).draftEmail.body}</p>
+                                     </div>
+                                </div>
+                                <div className="flex items-center gap-2 pt-4 border-t border-border">
+                                   <Button variant="ghost" size="icon"><ThumbsUp className="h-4 w-4" /></Button>
+                                   <Button variant="ghost" size="icon"><ThumbsDown className="h-4 w-4" /></Button>
+                                   <Button variant="ghost" size="icon"><Share2 className="h-4 w-4" /></Button>
+                                   <Button variant="ghost" size="icon"><Copy className="h-4 w-4" /></Button>
+                                   <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                                </div>
+                            </CardContent>
+                         </Card>
+                      ) : (msg.content as any).error ? (
+                         <div className="p-4 bg-destructive/20 text-destructive-foreground rounded-lg">
+                           <p className="font-semibold mb-1">VEDA:</p>
+                           <p>Sorry, an error occurred: {(msg.content as any).error}</p>
+                         </div>
+                      ): null}
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+              <Button onClick={onNewQuery} className="mt-4">Start New Chat</Button>
+        </div>
+    )
+}
+
 
 export default function GeneralUserDashboard() {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const router = useRouter();
   const [view, setView] = useState<View>('chat');
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
   const [spotlightNews, setSpotlightNews] = useState<SpotlightItem[]>([
     { type: 'real', title: 'Scientists Discover Breakthrough in Renewable Energy', summary: 'A new solar panel technology promises to double efficiency rates...', source: 'Science Today', verdict: 'True' },
     { type: 'fake', title: 'Warning: Viral Video Falsely Claims New Tax Law', summary: 'A widely circulated video is using deceptive edits to spread misinformation...', source: 'Internal Alert', verdict: 'Fake' },
@@ -160,28 +280,33 @@ export default function GeneralUserDashboard() {
   ]);
 
   const handleNewChat = async () => {
-    if (!inputValue.trim() || !user) return;
+    if (!inputValue.trim()) return;
     setIsLoading(true);
+    setInputValue('');
+
+    // 1. Add user message
+    const userMessage: ChatMessage = { role: 'user', content: inputValue };
     
-    try {
-      const { chatId } = await verifyUrlAndRecord({
-        userId: user.uid,
-        url: inputValue,
-      });
+    // 2. Generate random dummy response
+    const dummyResponse = generateRandomResponse();
+    const assistantMessage: ChatMessage = { role: 'assistant', content: dummyResponse };
 
-      router.push(`/dashboard/user/chat/${chatId}`);
+    // 3. Update state to show the chat
+    setChatMessages([userMessage, assistantMessage]);
 
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Failed to Start Chat',
-        description: error.message || 'Could not create a new verification session.',
-      });
-      setIsLoading(false);
-    } 
+    setIsLoading(false);
   };
+  
+  const resetChat = () => {
+      setChatMessages([]);
+      setInputValue('');
+  }
 
   const renderMainContent = () => {
+    if (chatMessages.length > 0) {
+        return <SimulatedChatView messages={chatMessages} onNewQuery={resetChat} />;
+    }
+
     switch (view) {
       case 'learn':
         return (
