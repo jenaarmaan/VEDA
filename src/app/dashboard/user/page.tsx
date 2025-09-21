@@ -234,13 +234,6 @@ function SimulatedChatView({ messages, onNewQuery }: { messages: ChatMessage[], 
                                     <h3 className="font-semibold mb-1">Explanation</h3>
                                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">{(msg.content as AnalyzeContentOutput).explanation}</p>
                                 </div>
-                                 <div>
-                                    <h3 className="font-semibold mb-2">Draft Email to Authorities:</h3>
-                                     <div className="text-sm text-muted-foreground p-3 bg-muted rounded-md space-y-2">
-                                        <p><strong>Subject:</strong> {(msg.content as AnalyzeContentOutput).draftEmail.subject}</p>
-                                        <p className="whitespace-pre-wrap"><strong>Body:</strong> {(msg.content as AnalyzeContentOutput).draftEmail.body}</p>
-                                     </div>
-                                </div>
                                 <div className="flex items-center gap-2 pt-4 border-t border-border">
                                    <Button variant="ghost" size="icon"><ThumbsUp className="h-4 w-4" /></Button>
                                    <Button variant="ghost" size="icon"><ThumbsDown className="h-4 w-4" /></Button>
