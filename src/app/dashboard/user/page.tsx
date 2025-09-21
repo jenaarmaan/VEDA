@@ -351,7 +351,7 @@ export default function GeneralUserDashboard() {
     switch (view) {
       case 'learn':
         return (
-          <div className="w-full">
+          <div className="w-full max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-8">Knowledge Hub</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
@@ -431,7 +431,7 @@ export default function GeneralUserDashboard() {
           </Sidebar>
 
           <main className="flex-1 flex flex-col overflow-y-auto">
-            <div className="flex-1 p-6 flex items-center justify-center">
+            <div className="flex-1 p-6 flex items-start justify-center">
               {renderMainContent()}
             </div>
           </main>
