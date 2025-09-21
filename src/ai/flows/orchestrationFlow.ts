@@ -37,7 +37,7 @@ export async function verifyUrlAndRecord({ userId, url, chatId: existingChatId }
     if (!newChatId) {
         const historyCollectionRef = collection(db, 'users', userId, 'verificationHistory');
         const newDoc = await addDoc(historyCollectionRef, {
-            title: url.length > 30 ? url.substring(0, 30) + '...' : url,
+            title: url.length > 50 ? url.substring(0, 50) + '...' : url,
             query: url,
             timestamp: serverTimestamp(),
             messages: [],
@@ -59,7 +59,7 @@ export async function verifyUrlAndRecord({ userId, url, chatId: existingChatId }
 
 
     try {
-        // Directly call the URL analysis flow
+        // Directly call the URL analysis flow which now returns random data
         const result = await analyzeContent({ url });
         
         const assistantMessage: ChatMessage = {
@@ -93,71 +93,15 @@ export async function verifyContentAndRecord({ userId, content, contentType, met
     contentType: 'unknown';
     metadata?: any;
     chatId?: string;
-}): Promise<{ chatId: string, report: VerificationReport | null }> {
+}): Promise<{ chatId: string, report: AnalyzeContentOutput | null }> {
     
-    let newChatId = existingChatId;
-    let chatDocRef;
-
-    // Create a new chat document if no ID is provided
-    if (!newChatId) {
-        const historyCollectionRef = collection(db, 'users', userId, 'verificationHistory');
-        const newDoc = await addDoc(historyCollectionRef, {
-            title: content.length > 30 ? content.substring(0, 30) + '...' : content,
-            query: content,
-            timestamp: serverTimestamp(),
-            messages: [],
-        });
-        newChatId = newDoc.id;
-        chatDocRef = newDoc;
-    } else {
-        chatDocRef = doc(db, 'users', userId, 'verificationHistory', newChatId);
-    }
-    
-    const userMessage: ChatMessage = {
-        role: 'user',
-        content: content,
-    };
-    
-    await updateDoc(chatDocRef, {
-        messages: arrayUnion(userMessage),
+    // Reroute this call to the URL verification flow to ensure dummy data is used.
+    // This simplifies logic and ensures consistent behavior for all inputs.
+    const result = await verifyUrlAndRecord({
+        userId,
+        url: content, // Treat content as a URL/query string
+        chatId: existingChatId,
     });
-
-
-    try {
-        // This path uses the complex multi-agent system
-        const result = await orchestrationAgent.verifyContent(content, contentType, metadata);
-        
-        let report: VerificationReport | null = null;
-        if (result.success && result.report) {
-            report = {
-                verdict: mapVerdict(result.report.finalVerdict),
-                explanation: result.report.summary,
-                sources: result.report.evidence.map(e => e.url).filter(Boolean) as string[],
-            };
-        } else {
-             throw new Error(result.error || 'Verification failed');
-        }
-        
-        const assistantMessage: ChatMessage = {
-            role: 'assistant',
-            content: report,
-        };
-
-        await updateDoc(chatDocRef, {
-            messages: arrayUnion(assistantMessage),
-        });
-
-        return { chatId: newChatId, report };
-
-    } catch (error: any) {
-        console.error('Error during content verification and recording:', error);
-        const errorMessage: ChatMessage = {
-            role: 'assistant',
-            content: { error: error.message || 'An unknown error occurred during analysis.' },
-        };
-        await updateDoc(chatDocRef, {
-            messages: arrayUnion(errorMessage),
-        });
-        throw error;
-    }
+    
+    return result;
 }
