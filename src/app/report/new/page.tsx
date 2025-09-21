@@ -37,8 +37,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle, Info, Lightbulb, XCircle } from 'lucide-react';
 
 const formSchema = z.object({
-  contentType: z.enum(['text', 'link', 'image', 'video', 'document']),
-  contentData: z.string().min(1, 'Content data cannot be empty.'),
+  url: z.string().url({ message: "Please enter a valid URL." }),
   notes: z.string().optional(),
 });
 
@@ -56,15 +55,14 @@ export default function NewReportPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      contentType: 'text',
-      contentData: prefilledContent || '',
+      url: prefilledContent || '',
       notes: '',
     },
   });
 
   useEffect(() => {
     if (prefilledContent) {
-      form.setValue('contentData', prefilledContent);
+      form.setValue('url', prefilledContent);
     }
   }, [prefilledContent, form]);
 
@@ -76,7 +74,7 @@ export default function NewReportPage() {
         title: 'Authentication Error',
         description: 'You must be logged in to submit a report.',
       });
-      router.push(`/login?redirect=/report/new&contentData=${encodeURIComponent(values.contentData)}`);
+      router.push(`/login?redirect=/report/new&contentData=${encodeURIComponent(values.url)}`);
       return;
     }
 
@@ -86,8 +84,7 @@ export default function NewReportPage() {
 
     try {
       const input: AnalyzeContentInput = {
-        contentType: values.contentType,
-        contentData: values.contentData,
+        url: values.url,
       };
 
       const result = await analyzeContent(input);
@@ -99,14 +96,14 @@ export default function NewReportPage() {
       await setDoc(reportRef, {
         reportId: reportId,
         submittedBy: user.uid,
-        contentType: values.contentType,
-        contentData: values.contentData,
-        location: user.location, // Save user's location/agency
+        contentType: 'link',
+        contentData: values.url,
+        location: user.details.state,
         notes: values.notes || '',
-        aiVerdict: result.verdict,
-        aiConfidenceScore: result.confidenceScore,
-        sources: result.sources,
-        justification: result.justification,
+        aiVerdict: result.status,
+        aiConfidenceScore: result.confidence,
+        sources: [], // This can be deprecated or extracted from explanation if needed
+        justification: result.explanation,
         status: 'Queued',
         createdAt: Date.now(),
       });
@@ -118,12 +115,12 @@ export default function NewReportPage() {
         description: `Your report (ID: ${reportId.substring(0,8)}) has been registered.`,
       });
 
-      // Placeholder for email notification
+      // Placeholder for email notification using the drafted email
       console.log("--- EMAIL NOTIFICATION TO BE SENT ---");
-      console.log(`To: agency-head@${user.location}.gov`);
+      console.log(`To: agency-head@${user.details.state}.gov`);
       console.log(`CC: govt-admin@gov.in, official@veda.in`);
-      console.log(`Subject: New Report Submitted - Case ID: ${reportId}`);
-      console.log(`Body: AI Verdict: ${result.verdict}. Case ID: ${reportId}. Original Content: ${values.contentData}`);
+      console.log(`Subject: ${result.draftEmail.subject}`);
+      console.log(`Body: ${result.draftEmail.body}`);
       console.log("--------------------------------------");
 
 
@@ -140,11 +137,13 @@ export default function NewReportPage() {
 
   const getVerdictIcon = (verdict: string) => {
     switch (verdict) {
-      case 'True':
+      case 'Verified':
         return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'Fake':
+      case 'False':
         return <XCircle className="h-5 w-5 text-red-500" />;
-      case 'Unverifiable':
+      case 'Questionable':
+        return <Info className="h-5 w-5 text-orange-500" />;
+      case 'Unverified':
         return <Info className="h-5 w-5 text-yellow-500" />;
       default:
         return <Lightbulb className="h-5 w-5" />;
@@ -158,7 +157,7 @@ export default function NewReportPage() {
         <CardHeader>
           <CardTitle>Submit Content for Verification</CardTitle>
           <CardDescription>
-            Submit suspicious news or content for AI-powered authenticity analysis.
+            Submit a URL for AI-powered authenticity analysis.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -167,43 +166,18 @@ export default function NewReportPage() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
-                  name="contentType"
+                  name="url"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Content Type</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select the type of content" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="text">Text</SelectItem>
-                          <SelectItem value="link">Link/URL</SelectItem>
-                          <SelectItem value="image">Image (URL)</SelectItem>
-                          <SelectItem value="video">Video (URL)</SelectItem>
-                          <SelectItem value="document">Document (Text content)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="contentData"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Content / URL</FormLabel>
+                      <FormLabel>URL</FormLabel>
                       <FormControl>
-                        <Textarea
-                          placeholder="Paste the content, URL, or text from the document here..."
-                          className="min-h-[150px]"
+                        <Input
+                          placeholder="https://example.com/news-article"
                           {...field}
                         />
                       </FormControl>
                       <FormDescription>
-                        For images or videos, please provide a direct URL.
+                        Paste the full URL of the content you want to verify.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -231,7 +205,7 @@ export default function NewReportPage() {
             <div className="space-y-6">
               <Alert>
                 <AlertTitle className="flex items-center gap-2">
-                  {getVerdictIcon(analysisResult.verdict)}
+                  {getVerdictIcon(analysisResult.status)}
                   Analysis Complete
                 </AlertTitle>
                 <AlertDescription>
@@ -247,28 +221,28 @@ export default function NewReportPage() {
                   <div className="flex justify-between items-center p-3 bg-muted rounded-md">
                     <span className="font-semibold">Verdict:</span>
                      <span className={`font-bold text-lg ${
-                       analysisResult.verdict === 'Fake' ? 'text-red-600' : 
-                       analysisResult.verdict === 'True' ? 'text-green-600' :
+                       analysisResult.status === 'False' ? 'text-red-600' : 
+                       analysisResult.status === 'Verified' ? 'text-green-600' :
+                       analysisResult.status === 'Questionable' ? 'text-orange-500' :
                        'text-yellow-600'
                      }`}>
-                      {analysisResult.verdict}
+                      {analysisResult.status}
                      </span>
                   </div>
                    <div className="flex justify-between items-center p-3 bg-muted rounded-md">
                     <span className="font-semibold">Confidence Score:</span>
-                    <span className="font-bold text-lg">{analysisResult.confidenceScore}%</span>
+                    <span className="font-bold text-lg">{analysisResult.confidence}%</span>
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-2">Justification:</h3>
-                    <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md">{analysisResult.justification}</p>
+                    <h3 className="font-semibold mb-2">Explanation:</h3>
+                    <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md">{analysisResult.explanation}</p>
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-2">Sources:</h3>
-                    <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-                      {analysisResult.sources.map((source, index) => (
-                        <li key={index}><a href={source} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{source}</a></li>
-                      ))}
-                    </ul>
+                     <h3 className="font-semibold mb-2">Draft Email to Authorities:</h3>
+                     <div className="text-sm text-muted-foreground p-3 bg-muted rounded-md space-y-2">
+                        <p><strong>Subject:</strong> {analysisResult.draftEmail.subject}</p>
+                        <p className="whitespace-pre-wrap"><strong>Body:</strong> {analysisResult.draftEmail.body}</p>
+                     </div>
                   </div>
                 </CardContent>
               </Card>
@@ -277,7 +251,7 @@ export default function NewReportPage() {
                 <Button onClick={() => {
                   setAnalysisResult(null);
                   setSubmittedReportId(null);
-                  form.reset();
+                  form.reset({ url: '', notes: '' });
                 }} className="w-full">
                   Submit Another Report
                 </Button>
