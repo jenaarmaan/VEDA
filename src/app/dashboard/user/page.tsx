@@ -211,10 +211,31 @@ const isAnalyzeContentOutput = (content: any): content is AnalyzeContentOutput =
 
 function SimulatedChatView({ messages, onNewQuery }: { messages: ChatMessage[], onNewQuery: () => void }) {
     const chatEndRef = React.useRef<HTMLDivElement>(null);
+    const userQuery = messages.find(m => m.role === 'user')?.content as string || 'N/A';
     
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
+
+    const constructEmailBody = (report: AnalyzeContentOutput) => {
+      const sourcesText = report.sources.join(', ');
+      return `Dear Sir/Madam,
+
+We are writing to report potentially misleading information circulating online.
+
+Query Submitted:
+"${userQuery}"
+
+Verification Result:
+- Verdict: ${report.status}
+- Explanation: ${report.explanation}
+- Traced Sources: ${sourcesText}
+
+We request that you review this matter and take appropriate action.
+
+Thank you,
+VEDA Fact-Checking Team`;
+    };
 
     return (
         <div className="w-full flex-1 max-w-4xl mx-auto space-y-6 overflow-y-auto p-4">
@@ -258,7 +279,7 @@ function SimulatedChatView({ messages, onNewQuery }: { messages: ChatMessage[], 
                                     href={`mailto:veda.agencyhead@gmail.com?cc=${encodeURIComponent('veda.govt@gmail.com,contact.vedaofficial@gmail.com')}&subject=${encodeURIComponent(
                                       (msg.content as AnalyzeContentOutput).draftEmail.subject
                                     )}&body=${encodeURIComponent(
-                                      (msg.content as AnalyzeContentOutput).draftEmail.body
+                                      constructEmailBody(msg.content as AnalyzeContentOutput)
                                     )}`}
                                   >
                                     <Button variant="ghost" size="icon">
