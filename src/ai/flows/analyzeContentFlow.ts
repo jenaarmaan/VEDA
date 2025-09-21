@@ -71,6 +71,40 @@ Produce the output in the required JSON format only. Do not output any other tex
 `,
 });
 
+const generateRandomResponse = (): AnalyzeContentOutput => {
+  const verdicts: AnalyzeContentOutput['status'][] = ['Verified', 'False', 'Questionable', 'Unverified'];
+  const randomVerdict = verdicts[Math.floor(Math.random() * verdicts.length)];
+  const randomConfidence = Math.floor(Math.random() * 40) + 60; // 60-100%
+
+  let explanation = '';
+  let contentDescription = 'the viral claim';
+
+  switch (randomVerdict) {
+    case 'Verified':
+      explanation = `The claims have been corroborated by multiple reliable sources, including mainstream news outlets and official statements. Cross-verification confirms the sequence of events and reported facts. Analysis shows no signs of manipulation.`;
+      break;
+    case 'False':
+      explanation = `This claim was fact-checked and proven false by multiple independent organizations. The original source was found to be a satirical website, and the information was taken out of context. Official sources have directly refuted this claim.`;
+      break;
+    case 'Questionable':
+      explanation = `The content contains a mix of accurate and unverified information, making it potentially misleading. While some facts are correct, the overall narrative is biased and lacks credible sources for its main claims. Caution is advised.`;
+      break;
+    case 'Unverified':
+      explanation = `There is insufficient credible evidence to either confirm or deny the claims made in this content. The story originates from a single, uncorroborated source with no history of reliable reporting. More information is needed for a conclusive verdict.`;
+      break;
+  }
+  
+  return {
+      status: randomVerdict,
+      confidence: randomConfidence,
+      explanation: explanation,
+      draftEmail: {
+          subject: "Fact-check report from VEDA",
+          body: `Dear Sir/Madam,\n\nWe are writing to report potentially misleading information circulating online regarding ${contentDescription}. Our analysis indicates the content is ${randomVerdict.toLowerCase()}.\n\n${explanation}\n\nWe request that you review this matter and take appropriate action.\n\nThank you,\nVEDA Fact-Checking Team`
+      }
+    };
+}
+
 
 const analyzeContentFlow = ai.defineFlow(
   {
@@ -86,16 +120,8 @@ const analyzeContentFlow = ai.defineFlow(
     // }
     // return output;
     
-    // Return dummy data
-    return {
-      status: "False",
-      confidence: 0,
-      explanation: "This news was fact-checked by East Burdwan Police and reported by mainstream outlets (Times of India, Millennium Post). The viral claim that SSC candidates were forced to remove their iron bangle (noa) was proven false. The candidate was allowed to write the exam with the bangle. Police concluded the viral content was politically motivated and misleading.",
-      draftEmail: {
-          subject: "Fact-check report from VEDA",
-          body: "Dear Sir/Madam,\\n\\nI would like to report misinformation circulating online regarding SSC candidates allegedly being forced to remove their iron bangle (noa). After verifying with East Burdwan Police and mainstream outlets, this claim is proven false and politically motivated.\\n\\nKindly take appropriate steps to counter this misinformation.\\n\\nThank you,\\n[Your Name]"
-      }
-    };
+    // Return random dummy data
+    return generateRandomResponse();
   }
 );
 
