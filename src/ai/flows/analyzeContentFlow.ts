@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow to analyze and fact-check the content of a given URL.
@@ -34,8 +35,6 @@ const prompt = ai.definePrompt({
     prompt: `You are a highly advanced AI fact-checking expert for an organization named VEDA.
 Your task is to analyze the content at the provided URL and determine its authenticity based on publicly available, reliable sources.
 
-URL to Analyze: {{{url}}}
-
 Follow these steps for your analysis:
 1.  **Read and Understand**: Access and thoroughly read the content at the provided URL to identify the main claims.
 2.  **Fact-Check**: Search for evidence from credible sources (major news organizations, scientific journals, official government websites, established fact-checking organizations) to verify or debunk the claims.
@@ -47,6 +46,26 @@ Follow these steps for your analysis:
 4.  **Determine Confidence**: Assign a confidence score from 0 to 100 on how certain you are about your verdict.
 5.  **Write Explanation**: Provide a neutral, concise, 3-5 sentence explanation of your findings. Summarize the key evidence and cite reliable sources that support your conclusion.
 6.  **Draft Email**: Compose a polite and professional email body summarizing the fact-check. The email should be addressed to relevant authorities, asking them to take appropriate action against the misinformation. The subject line should be "Fact-check report from VEDA".
+
+Here is an example of the expected output quality and format:
+
+EXAMPLE INPUT:
+https://timesofindia.indiatimes.com/city/kolkata/fake-news-say-police-after-bjps-noa-charges/articleshow/123930163.cms
+
+EXAMPLE OUTPUT:
+{
+  "status": "False",
+  "confidence": 100,
+  "explanation": "This news was fact-checked by East Burdwan Police and reported by mainstream outlets (Times of India, Millennium Post). The viral claim that SSC candidates were forced to remove their iron bangle (noa) was proven false. The candidate was allowed to write the exam with the bangle. Police concluded the viral content was politically motivated and misleading.",
+  "draftEmail": {
+      "subject": "Fact-check report from VEDA",
+      "body": "Dear Sir/Madam,\\n\\nI would like to report misinformation circulating online regarding SSC candidates allegedly being forced to remove their iron bangle (noa). After verifying with East Burdwan Police and mainstream outlets, this claim is proven false and politically motivated.\\n\\nKindly take appropriate steps to counter this misinformation.\\n\\nThank you,\\n[Your Name]"
+  }
+}
+
+Now, analyze the following URL:
+
+URL to Analyze: {{{url}}}
 
 Produce the output in the required JSON format only. Do not output any other text or formatting.
 `,

@@ -10,6 +10,16 @@ export interface VerificationReport {
     sources: string[];
 }
 
+export interface AnalyzeContentOutput {
+  status: 'Verified' | 'Questionable' | 'False' | 'Unverified';
+  confidence: number;
+  explanation: string;
+  draftEmail: {
+    subject: string;
+    body: string;
+  };
+}
+
 
 export type UserRole = 'civic' | 'sentinel' | 'ground_sentinel' | 'council' | 'state_officer' | 'govt_admin';
 
@@ -105,7 +115,7 @@ export interface SpotlightItem {
 
 export interface ChatMessage {
     role: 'user' | 'assistant';
-    content: string | VerificationReport | { error: string };
+    content: string | VerificationReport | AnalyzeContentOutput | { error: string };
 }
 
 export interface VerificationHistory {

@@ -34,7 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import SpotlightCard from '@/components/dashboard/SpotlightCard';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { verifyContentAndRecord } from '@/ai/flows/orchestrationFlow';
+import { verifyUrlAndRecord } from '@/ai/flows/orchestrationFlow';
 
 type View = 'chat' | 'learn' | 'recent';
 
@@ -164,10 +164,9 @@ export default function GeneralUserDashboard() {
     setIsLoading(true);
     
     try {
-      const { chatId } = await verifyContentAndRecord({
+      const { chatId } = await verifyUrlAndRecord({
         userId: user.uid,
-        content: inputValue,
-        contentType: 'unknown', 
+        url: inputValue,
       });
 
       router.push(`/dashboard/user/chat/${chatId}`);

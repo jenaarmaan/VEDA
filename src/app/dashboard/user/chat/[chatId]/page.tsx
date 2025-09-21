@@ -37,8 +37,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { type VerificationReport } from '@/lib/types';
-import { verifyContentAndRecord } from '@/ai/flows/orchestrationFlow';
+import { type VerificationReport, AnalyzeContentOutput } from '@/lib/types';
+import { verifyUrlAndRecord } from '@/ai/flows/orchestrationFlow';
 import { doc, onSnapshot, updateDoc, arrayUnion, collection, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { VerificationHistory } from '@/lib/types';
@@ -186,11 +186,9 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
       setInputValue('');
       
       try {
-        await verifyContentAndRecord({
+        await verifyUrlAndRecord({
             userId: user.uid,
-            content: content,
-            contentType: 'unknown',
-            metadata: { source: 'user_input' },
+            url: content,
             chatId: chatId,
         });
       } catch (error: any) {
@@ -208,14 +206,18 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
       }
   };
 
-  const getVerdictBadge = (verdict: VerificationReport['verdict']) => {
+  const getVerdictBadge = (verdict: AnalyzeContentOutput['status']) => {
     switch(verdict) {
-      case 'True': return <Badge variant="default" className="bg-green-600 hover:bg-green-700"><CheckCircle className="mr-2 h-4 w-4" />True</Badge>;
+      case 'Verified': return <Badge variant="default" className="bg-green-600 hover:bg-green-700"><CheckCircle className="mr-2 h-4 w-4" />Verified</Badge>;
       case 'False': return <Badge variant="destructive"><XCircle className="mr-2 h-4 w-4" />False</Badge>;
-      case 'Suspicious': return <Badge variant="destructive" className="bg-orange-500 hover:bg-orange-600"><AlertTriangle className="mr-2 h-4 w-4" />Suspicious</Badge>;
-      default: return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-black"><AlertTriangle className="mr-2 h-4 w-4" />Unverifiable</Badge>;
+      case 'Questionable': return <Badge variant="destructive" className="bg-orange-500 hover:bg-orange-600"><AlertTriangle className="mr-2 h-4 w-4" />Questionable</Badge>;
+      default: return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-black"><AlertTriangle className="mr-2 h-4 w-4" />Unverified</Badge>;
     }
   };
+  
+  const isAnalyzeContentOutput = (content: any): content is AnalyzeContentOutput => {
+      return content && typeof content === 'object' && 'status' in content && 'confidence' in content && 'explanation' in content;
+  }
 
   if (isPageLoading) {
     return (
@@ -245,28 +247,23 @@ export default function ChatPage({ params }: { params: { chatId: string } }) {
                   )}
                   {msg.role === 'assistant' && (
                     <div>
-                      {(msg.content as VerificationReport).verdict ? (
+                      {isAnalyzeContentOutput(msg.content) ? (
                           <Card className="bg-card/80">
                             <CardHeader className="flex flex-row justify-between items-center">
                                 <CardTitle>Verification Result</CardTitle>
-                                {getVerdictBadge((msg.content as VerificationReport).verdict)}
+                                {getVerdictBadge((msg.content as AnalyzeContentOutput).status)}
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div>
                                     <h3 className="font-semibold mb-1">Explanation</h3>
-                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{(msg.content as VerificationReport).explanation}</p>
+                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{(msg.content as AnalyzeContentOutput).explanation}</p>
                                 </div>
                                  <div>
-                                    <h3 className="font-semibold mb-1">Sources</h3>
-                                    <ul className="list-disc pl-5 text-sm">
-                                        {(msg.content as VerificationReport).sources.map((src, i) => (
-                                          <li key={i}>
-                                            <a href={src} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                                              {src}
-                                            </a>
-                                          </li>
-                                        ))}
-                                    </ul>
+                                    <h3 className="font-semibold mb-2">Draft Email to Authorities:</h3>
+                                     <div className="text-sm text-muted-foreground p-3 bg-muted rounded-md space-y-2">
+                                        <p><strong>Subject:</strong> {(msg.content as AnalyzeContentOutput).draftEmail.subject}</p>
+                                        <p className="whitespace-pre-wrap"><strong>Body:</strong> {(msg.content as AnalyzeContentOutput).draftEmail.body}</p>
+                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 pt-4 border-t border-border">
                                    <Button variant="ghost" size="icon"><ThumbsUp className="h-4 w-4" /></Button>
